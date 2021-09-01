@@ -1,0 +1,19 @@
+$ cat .gitignore
+
+# Can ignore specific files
+Makefile
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+manapavi.geany
+
+# Use wildcards as well
+CPack*
+
+# Can also ignore all directories and files in a directory.
+
+data*/**/*
+build*/**/*
+test*/**/*
+CMakeFiles/**/*
+_CPack*/**/*

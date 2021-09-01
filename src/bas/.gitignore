@@ -1,0 +1,10 @@
+$ cat .gitignore
+
+*
+!.gitignore
+!*.bas
+!*.bi
+!*pavi.ui
+!*pavi.png
+!*CMakeLists.txt
+!*/
