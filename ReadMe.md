@@ -29,12 +29,14 @@ command line control and DBus integration, designed to:
 The following screen shot shows a track ploted (by cairo) on top of OSM
 (Open Stree Map) map tiles by red points (60 % translucent) with
 variable diameter (scaled by the points elevation):
-![Track on Open Street Map tiles](img/OSM2.png)
+
+![Track on Open Street Map tiles](img/OSM.png)
 
 The second screen shot plots the same track on top of Virtual Earth
 Hybrid map tiles, complemented by a layer providing controls and point
 info:
-![Virtual Earth Map with Layer](img/VEH2.png)
+
+![Virtual Earth Map with Layer](img/VEH.png)
 
 Currently this project is work in progress in an early stage. Planed
 future improvements are:
