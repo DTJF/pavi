@@ -18,7 +18,7 @@ Find detailed information on components at
 It's a GPLv3 licensed GtkApplication with grafical user interface,
 command line control and DBus integration, designed to:
 
-* show a worlds map segment (tiles downloaded/chached from different web sources)
+* show a worlds map segment (tiles downloaded/cached from different web sources)
 * move in segment (keyboard/mouse: north, east, south, west, zoom in or out)
 * load recorded track\[s\] (`*.NMEA` or `*.GPX` file format)
 * plot track on map (custom color/width for lines and points)
