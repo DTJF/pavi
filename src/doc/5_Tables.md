@@ -8,7 +8,7 @@ FIXME
 
 ## Blank Keys ## {#ChaBlankKeys}
 
-  Key | Movement
+Key   | Movement
 ----: | :-------
 Up    | north
 Right | east
@@ -26,7 +26,7 @@ Keypad | Movement
      8 | north
      9 | north-east
 
-     Key | Action
+Key      | Action
 -------: | :---------------------------------
        1 | reset map to slot 1
        2 | reset map to slot 2
@@ -44,18 +44,19 @@ Keypad | Movement
 
 ## Control Keys ## {#ChaControlKeys}
 
-     Key | Action
--------: | :---------------------------------
-       1 | store map view in slot 1
-       2 | store map view in slot 2
-       3 | store map view in slot 3
-       4 | store map view in slot 4
-       5 | store map view in slot 5
-       6 | store map view in slot 6
-       7 | store map view in slot 7
-       8 | store map view in slot 8
-       9 | store map view in slot 9
-       0 | store map view in slot 0
+Key | Action
+--: | :-----------------------
+  1 | store map view in slot 1
+  2 | store map view in slot 2
+  3 | store map view in slot 3
+  4 | store map view in slot 4
+  5 | store map view in slot 5
+  6 | store map view in slot 6
+  7 | store map view in slot 7
+  8 | store map view in slot 8
+  9 | store map view in slot 9
+  0 | store map view in slot 0
+
 
 ## Shift Keys ## {#ChaShiftKeys}
 
@@ -63,7 +64,8 @@ Shift keys are used to handle the current track, moving the active
 point, centering the track in the map or opening the track preference
 dialog.
 
-     Key | Movement
+
+Key      | Movement
 -------: | :------------
   PageUp | 50 x forward
       Up | 10 x forward
@@ -71,6 +73,7 @@ dialog.
     Left | 1 x backward
     Down | 10 x backward
 PageDown | 50 x backward
+
 
 Keypad | Movement to
 -----: | :----------
@@ -84,7 +87,8 @@ Keypad | Movement to
      8 | 80 % point
      9 | 90 % point
 
-     Key | Action
+
+Key      | Action
 -------: | :--------------------
    Space | show complete track
        I | info for active track
