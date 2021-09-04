@@ -39,7 +39,7 @@ END SUB
 /'* \brief Callback handling the track selection
 \param Cell FIXME
 \param Path FIXME
-\param UserData FIXME
+\param UDat FIXME
 
 FIXME
 
@@ -48,7 +48,7 @@ FIXME
 SUB on_TrackSel_clicked CDECL ALIAS "on_TrackSel_clicked"( _
   BYVAL Cell AS GtkCellRendererToggle PTR _
 , BYVAL Path AS gchar PTR _
-, BYVAL UserData AS gpointer) EXPORT
+, BYVAL UDat AS gpointer) EXPORT
   GUI->TSnoPref = TRUE
   TS_select(*Path)
 END SUB
@@ -56,7 +56,7 @@ END SUB
 
 /'* \brief Call back handling the load action
 \param Butt Button emitting the signal
-\param UserData Unused
+\param UDat Unused
 
 SUB handling track loading when user clicks on load button. It opens
 the file load dialog and loads the file[s] selected by the user.
@@ -65,7 +65,7 @@ the file load dialog and loads the file[s] selected by the user.
 '/
 SUB on_Load_clicked CDECL ALIAS "on_Load_clicked"( _
   BYVAL Butt AS GtkButton PTR _
-, BYVAL UserData AS gpointer) EXPORT
+, BYVAL UDat AS gpointer) EXPORT
 WITH *GUI
   IF GTK_RESPONSE_OK = gtk_dialog_run(GTK_DIALOG(.DTL)) THEN
     DIM AS TrackLoader PTR last
@@ -90,7 +90,7 @@ END SUB
 \param Tree Tree view emitting the signal
 \param Path Path (row) of new selection
 \param Clmn Column (unused)
-\param UserData Popover widget to close
+\param UDat Popover widget to close
 
 FIXME
 
@@ -100,7 +100,7 @@ SUB on_Map_selected CDECL ALIAS "on_Map_selected"( _
   BYVAL Tree AS GtkTreeView PTR _
 , BYVAL Path AS GtkTreePath PTR _
 , BYVAL Clmn AS GtkTreeViewColumn PTR _
-, BYVAL UserData AS gpointer) EXPORT
+, BYVAL UDat AS gpointer) EXPORT
 WITH *GUI
   osm_gps_map_download_cancel_all(OSM_GPS_MAP(.MAP))
 
@@ -113,14 +113,14 @@ WITH *GUI
   g_object_set(.MAP, "map-source", VALINT(*id), NULL)
   gtk_window_set_title(GTK_WINDOW(.WIN), nam)
   g_free(nam) : g_free(id)
-  gtk_popover_popdown(GTK_POPOVER(UserData))
+  gtk_popover_popdown(GTK_POPOVER(UDat))
 END WITH
 END SUB
 
 
 /'* \brief FIXME
 \param Cont Container emitting the signal
-\param UserData FIXME
+\param UDat FIXME
 
 FIXME
 
@@ -128,46 +128,26 @@ FIXME
 '/
 SUB on_Poov_limit_size CDECL ALIAS "on_Poov_limit_size"( _
   BYVAL Cont AS GtkContainer PTR _
-, BYVAL UserData AS gpointer) EXPORT
+, BYVAL UDat AS gpointer) EXPORT
 WITH *GUI
-  VAR adj = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(UserData))
+  VAR adj = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(UDat))
   VAR upp = gtk_adjustment_get_upper(adj)
 
   VAR w = gtk_widget_get_allocated_width(GTK_WIDGET(.MAP))
   VAR h = gtk_widget_get_allocated_height(GTK_WIDGET(.MAP))
-  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(UserData) _
+  gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(UDat) _
     , IIF(upp < w, GTK_POLICY_NEVER, GTK_POLICY_ALWAYS), GTK_POLICY_AUTOMATIC)
-  g_object_set(G_OBJECT(UserData) _
+  g_object_set(G_OBJECT(UDat) _
     , "max_content_height", (h - 25) _
     , "max_content_width", (w - 25), NULL)
-  gtk_widget_queue_draw(GTK_WIDGET(UserData))
-END WITH
-END SUB
-
-
-/'* \brief Callback fetching the tracks PopOver mapping
-\param Cont Container emitting the signal
-\param UserData Unused
-
-SUB handling the ???
-
-\since 0.0
-'/
-SUB on_PoovTracks_map CDECL ALIAS "on_PoovTracks_map"( _
-  BYVAL Cont AS GtkContainer PTR _
-, BYVAL UserData AS gpointer) EXPORT
-WITH *GUI
-  IF 0 = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(.STO), NULL) _
-    THEN  on_Load_clicked(NULL, NULL)
-
-  on_Poov_limit_size(Cont, .ScrollTracks)
+  gtk_widget_queue_draw(GTK_WIDGET(UDat))
 END WITH
 END SUB
 
 
 /'* \brief Callback fetching the layer state
 \param Butt Button emiting the signal
-\param UserData Unused
+\param UDat Unused
 
 SUB handling the map layer. The original OsmGpsMapLayer gets added or
 removed from the map widget. And the internal coordinates display get a
@@ -177,7 +157,7 @@ note by setting the #PARdata.LayOn flag.
 '/
 SUB on_Layer_toggled CDECL ALIAS "on_Layer_toggled"( _
   BYVAL Butt AS GtkToggleButton PTR _
-, BYVAL UserData AS gpointer) EXPORT
+, BYVAL UDat AS gpointer) EXPORT
 WITH *GUI
   IF gtk_toggle_button_get_active(Butt) THEN
     PAR->LayOn = TRUE
@@ -232,6 +212,16 @@ _1_BLANK:
 WITH *PAR
   VAR osm = OSM_GPS_MAP(GUI->MAP)
   SELECT CASE Event->keyval
+  CASE GDK_KEY_0 : PAR->Map_restore(0) : RETURN TRUE
+  CASE GDK_KEY_1 : PAR->Map_restore(1) : RETURN TRUE
+  CASE GDK_KEY_2 : PAR->Map_restore(2) : RETURN TRUE
+  CASE GDK_KEY_3 : PAR->Map_restore(3) : RETURN TRUE
+  CASE GDK_KEY_4 : PAR->Map_restore(4) : RETURN TRUE
+  CASE GDK_KEY_5 : PAR->Map_restore(5) : RETURN TRUE
+  CASE GDK_KEY_6 : PAR->Map_restore(6) : RETURN TRUE
+  CASE GDK_KEY_7 : PAR->Map_restore(7) : RETURN TRUE
+  CASE GDK_KEY_8 : PAR->Map_restore(8) : RETURN TRUE
+  CASE GDK_KEY_9 : PAR->Map_restore(9) : RETURN TRUE
   CASE GDK_KEY_space : DIM AS TS_bbox x = (FALSE) : RETURN TRUE
   CASE GDK_KEY_KP_6, GDK_KEY_Right : osm_gps_map_scroll(osm, .MapW \ 4, 0)
   CASE GDK_KEY_KP_4, GDK_KEY_Left  : osm_gps_map_scroll(osm,-.MapW \ 4, 0)
@@ -242,7 +232,7 @@ WITH *PAR
   CASE GDK_KEY_KP_1  : osm_gps_map_scroll(osm,-.MapW \ 4, .MapH \ 4)
   CASE GDK_KEY_KP_7  : osm_gps_map_scroll(osm,-.MapW \ 4,-.MapH \ 4)
   CASE GDK_KEY_F11
-    IF MASK_IN(GDK_WINDOW_STATE_FULLSCREEN, GUI->WIN_state) _
+    IF GDK_WINDOW_STATE_FULLSCREEN AND GUI->WIN_state _
       THEN gtk_window_unfullscreen(GTK_WINDOW(GUI->WIN)) _
       ELSE gtk_window_fullscreen(GTK_WINDOW(GUI->WIN))
   CASE ELSE : RETURN FALSE
@@ -290,6 +280,16 @@ _2_SHIFT_CONTROL:
 _1_CONTROL:
 WITH *GUI
   SELECT CASE AS CONST Event->keyval
+  CASE GDK_KEY_0 : PAR->Map_store(0) : RETURN TRUE
+  CASE GDK_KEY_1 : PAR->Map_store(1) : RETURN TRUE
+  CASE GDK_KEY_2 : PAR->Map_store(2) : RETURN TRUE
+  CASE GDK_KEY_3 : PAR->Map_store(3) : RETURN TRUE
+  CASE GDK_KEY_4 : PAR->Map_store(4) : RETURN TRUE
+  CASE GDK_KEY_5 : PAR->Map_store(5) : RETURN TRUE
+  CASE GDK_KEY_6 : PAR->Map_store(6) : RETURN TRUE
+  CASE GDK_KEY_7 : PAR->Map_store(7) : RETURN TRUE
+  CASE GDK_KEY_8 : PAR->Map_store(8) : RETURN TRUE
+  CASE GDK_KEY_9 : PAR->Map_store(9) : RETURN TRUE
   CASE GDK_KEY_o : on_Load_clicked(NULL, NULL) : RETURN TRUE
   'CASE GDK_KEY_p : '!! print / pref
   'CASE GDK_KEY_s : '!! save
@@ -311,7 +311,7 @@ END WITH
 FUNCTION on_Map_keypress CDECL ALIAS "on_Map_keypress"( _
   BYVAL Wid AS GtkWidget PTR _
 , BYVAL Event AS GdkEventKey PTR _
-, BYVAL UserData AS gpointer) AS gboolean EXPORT
+, BYVAL UDat AS gpointer) AS gboolean EXPORT
 
   VAR state = Event->state XOR GDK_MOD2_MASK
   GENERAL_KEYS()

@@ -57,7 +57,8 @@ END TYPE
 
 /'* \brief UDT holding search result
 
-In search process this UDT is used to store the track results.
+In order to find a point nearest to a given location the search process
+uses this UDT to store the track results.
 
 \since 0.0
 '/
@@ -77,7 +78,7 @@ nearest for loaders remain in the #TS_nearest.Res array.
 '/
 TYPE TS_nearest
   AS UDTnearest_result Res(3)
-  AS float Lon, Lat
+  AS float Lat, Lon
   DECLARE CONSTRUCTOR(BYVAL AS float, BYVAL AS float)
   DECLARE STATIC FUNCTION _dist CDECL( _
     BYVAL AS GtkTreeModel PTR _
@@ -96,7 +97,7 @@ nearest for loaders remain in the #TS_nearest.Res array.
 \since 0.0
 '/
 TYPE TS_bbox
-  AS float Lo0 = PI, Lo1 = -PI, La0 = PI, La1 = -PI
+  AS float La0 = PI, La1 = -PI, Lo0 = PI, Lo1 = -PI
   AS LONG Mode, Cnt = 0
   DECLARE CONSTRUCTOR(BYVAL AS gboolean)
   DECLARE STATIC FUNCTION _bounds CDECL( _

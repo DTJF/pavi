@@ -81,29 +81,29 @@ WITH *GUI
   VAR sto = GTK_TREE_STORE(.STO)
   IF NULL = Par THEN
     gtk_tree_store_insert_with_values(sto, @new_par, NULL, -1 _
-    , COL__ENABLE, FALSE _
-    , COL____NAME, Fol _
-    , COL____PATH, NULL _
-    , COL_VISIBLE, FALSE _
-    , COL__LOADER, NULL _
-    , COL__SELECT, FALSE _
-    ,-1)
+      , COL__ENABLE, FALSE _
+      , COL__SELECT, FALSE _
+      , COL_VISIBLE, FALSE _
+      , COL____NAME, Fol _
+      , COL____PATH, NULL _
+      , COL__LOADER, NULL _
+      ,-1)
   END IF
 
   VAR def = track_layer_get_default(TRACK_LAYER(.TRL))
   IF def THEN
     gtk_tree_store_insert_with_values(sto, @iter, IIF(Par, Par, @new_par), -1 _
-    , COL__ENABLE, TRUE _
-    , COL__SELECT, FALSE _
-    , COL_VISIBLE, TRUE _
-    , COL____PATH, Fol _
-    , COL____NAME, Nam _
-    , COL_P_WIDTH, PEEK(UBYTE, def->P) _
-    , COL_L_WIDTH, PEEK(UBYTE, def->L) _
-    , COL_P_COLOR, def->P[1] _
-    , COL_L_COLOR, def->L[1] _
-    , COL__LOADER, Loa _
-    ,-1)
+      , COL__ENABLE, TRUE _
+      , COL__SELECT, FALSE _
+      , COL_VISIBLE, TRUE _
+      , COL____PATH, Fol _
+      , COL____NAME, Nam _
+      , COL_P_WIDTH, PEEK(UBYTE, def->P) _
+      , COL_L_WIDTH, PEEK(UBYTE, def->L) _
+      , COL_P_COLOR, def->P[1] _
+      , COL_L_COLOR, def->L[1] _
+      , COL__LOADER, Loa _
+      ,-1)
     VAR s = gtk_tree_model_get_string_from_iter(model, @iter)
     PEEK(TrackLoader, Loa).Path = *s
     g_free(s)
@@ -219,7 +219,7 @@ FUNCTION TS_nearest._dist CDECL( _
     , -1)
   IF FALSE = en ORELSE NULL = loa THEN RETURN FALSE
   WITH PEEK(TS_nearest, UserData)
-    VAR d = loa->Nearest(.Lon, .Lat) _
+    VAR d = loa->Nearest(.Lat, .Lon) _
      , d0 = .Res(0).Dist - d, ii = -1L
     FOR i AS LONG = 0 TO UBOUND(.Res)
     WITH .Res(i)
@@ -236,8 +236,8 @@ END FUNCTION
 
 
 /'* \brief Find the point nearest to a location
-\param Lo Longiture [radians]
 \param La Latiture [radians]
+\param Lo Longiture [radians]
 
 This constructor searches in all enabled tracks the point nearest to
 the given location. In the result array #TS_nearest.Res the four most
@@ -247,10 +247,10 @@ enabled.
 \since 0.0
 '/
 CONSTRUCTOR TS_nearest( _
-    BYVAL Lo AS float _
-  , BYVAL La AS float)
-  Lon = Lo
+    BYVAL La AS float _
+  , BYVAL Lo AS float)
   Lat = La
+  Lon = Lo
 
   gtk_tree_model_foreach(GTK_TREE_MODEL(GUI->STO) _
     , @TS_nearest._dist(), CAST(gpointer, @THIS))
@@ -285,10 +285,10 @@ FUNCTION TS_bbox._bounds CDECL( _
 
   WITH PEEK(TS_bbox, UserData)
     IF en OR .Mode THEN
-      IF .Lo0 > loa->Mn.Lon THEN .Lo0 = loa->Mn.Lon
-      IF .Lo1 < loa->Mx.Lon THEN .Lo1 = loa->Mx.Lon
       IF .La0 > loa->Mn.Lat THEN .La0 = loa->Mn.Lat
       IF .La1 < loa->Mx.Lat THEN .La1 = loa->Mx.Lat
+      IF .Lo0 > loa->Mn.Lon THEN .Lo0 = loa->Mn.Lon
+      IF .Lo1 < loa->Mx.Lon THEN .Lo1 = loa->Mx.Lon
       .Cnt += 1
     END IF
   END WITH

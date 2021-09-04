@@ -16,6 +16,7 @@ CONST AS DOUBLE _
 , LN2 = LOG(2) _       '*< natural logarythm 2.0
 , PI = 4 * atn(1) _    '*< PI = 3.14...
 , PIx2 = PI * 2 _      '*< PI * 2
+, PId2 = PI / 2 _      '*< PI * 2
 , Deg2Rad = PI / 180 _ '*< transform degree in radians
 , Rad2Deg = 180 / PI _ '*< transform radians in degree
 , ERA = 3443.89849 * 1852 '*< earth radius [m]

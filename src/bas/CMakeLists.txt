@@ -1,3 +1,20 @@
+# Use the package PkgConfig to detect library files
+FIND_PACKAGE(PkgConfig REQUIRED)
+PKG_CHECK_MODULES(GTK REQUIRED IMPORTED_TARGET gtk+-3.0>=3.22)
+PKG_CHECK_MODULES(OSM REQUIRED IMPORTED_TARGET osmgpsmap-1.0>=1.0)
+
+IF(NOT(GTK_FOUND AND OSM_FOUND))
+  IF(NOT GTK_FOUND)
+    MSG_LOG("!! Gtk library missing -> no executable")
+  ENDIF()
+  IF(NOT OSM_FOUND)
+    MSG_LOG("!! OsmGpsMap library missing -> no executable")
+  ENDIF()
+  RETURN()
+ENDIF()
+MSG_LOG(">> target <all> OK (found Gtk-${GTK_VERSION}/OsmGpsMap-${OSM_VERSION})")
+
+
 # transfer constants to FB source
 #SET(fnam ${CMAKE_CURRENT_SOURCE_DIR}/pavi_version.bi)
 #CONFIGURE_FILE(${fnam}.in ${fnam} @ONLY)

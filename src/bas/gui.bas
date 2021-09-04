@@ -85,20 +85,21 @@ CONSTRUCTOR GUIdata(BYREF Fnam AS STRING, BYVAL Appli AS GApplication PTR)
   VAR mawi = GTK_WIDGET(MAP)
   gtk_widget_set_size_request(mawi, PAR->MapW, PAR->MapH)
   gtk_widget_set_can_focus(mawi, TRUE)
+  gtk_widget_set_focus_on_click(mawi, TRUE)
+  gtk_widget_grab_focus(mawi)
   gtk_widget_add_events(mawi _
-  ,  GDK_BUTTON_PRESS_MASK + GDK_BUTTON_RELEASE_MASK _
-  + GDK_POINTER_MOTION_MASK + GDK_SCROLL_MASK _
-  + GDK_KEY_PRESS_MASK + GDK_KEY_RELEASE_MASK)
-  'gtk_widget_add_events (GTK_WIDGET (object), GDK_SMOOTH_SCROLL_MASK)
+    , GDK_BUTTON_PRESS_MASK + GDK_BUTTON_RELEASE_MASK _
+    + GDK_POINTER_MOTION_MASK + GDK_SCROLL_MASK _
+    + GDK_KEY_PRESS_MASK + GDK_KEY_RELEASE_MASK) ' + GDK_SMOOTH_SCROLL_MASK)
   gtk_container_add(GTK_CONTAINER(gtk_builder_get_object(xml, "BoxMain")), mawi)
   gtk_widget_show_all(mawi)
-  osm_gps_map_layer_render(OSM_GPS_MAP_LAYER(OSD), OSM_GPS_MAP(MAP))
 
   TRL = track_layer_new(MAP)
   g_object_set(TRL _
   , "font-type", PAR->InfoFontType _
   , "font-size", PAR->InfoFontSize _
   , NULL)
+  osm_gps_map_layer_render(OSM_GPS_MAP_LAYER(OSD), OSM_GPS_MAP(MAP))
 
   VAR src1 = OSM_GPS_MAP_SOURCE_NULL
   VAR listo = GTK_LIST_STORE(gtk_builder_get_object(xml, "LSMaps"))
@@ -138,3 +139,41 @@ DESTRUCTOR GUIdata()
   g_object_unref(STO)
   g_object_unref(OSD)
 END DESTRUCTOR
+
+
+/'* \brief Remember bounding box
+\param Ind Slot index
+
+Procedure storing the current map segment in the Ind memory slot.
+
+\since 0.0
+'/
+SUB PARdata.Map_store(BYVAL Ind AS gint)
+  IF Ind > UBOUND(MapSlots) THEN EXIT SUB
+WITH MapSlots(Ind)
+  DIM AS OsmGpsMapPoint p0, p1
+  osm_gps_map_get_bbox(OSM_GPS_MAP(GUI->MAP), @p0, @p1)
+  .La0 = p0.rlat
+  .La1 = p1.rlat
+  .Lo0 = p0.rlon
+  .Lo1 = p1.rlon
+END WITH
+END SUB
+
+
+/'* \brief Restore a memory slot
+\param Ind Slot index
+
+When a map segment (bounding box) was stored in the Ind slot, this
+procedure resets the map to that slot view, setting the bounding box,
+so that the zoom level may change when the map size changed.
+
+\since 0.0
+'/
+SUB PARdata.Map_restore(BYVAL Ind AS gint)
+  IF Ind > UBOUND(MapSlots) THEN EXIT SUB
+WITH MapSlots(Ind)
+  IF .La0 > PId2 THEN EXIT SUB ' invalid slot
+  track_layer_set_bbox(TRACK_LAYER(GUI->TRL), .La0, .La1, .Lo0, .Lo1)
+END WITH
+END SUB

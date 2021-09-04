@@ -40,7 +40,15 @@ TYPE GUIdata
 END TYPE
 COMMON SHARED AS GUIdata PTR GUI
 
+TYPE MapSeg
+  AS float La0 = PI, Lo0, La1, Lo1
+END TYPE
+
 TYPE PARdata
+  AS gint _
+    Version = &h00000000 _ '*< Version of this parameter file
+  , Size = SIZEOF(PARdata) '*< Size in bytes
+  AS MapSeg MapSlots(9)
   AS gboolean _
     LayOn _          '*< user enabled the layer
   , LayResurf = TRUE '*< create new surface in #TrackLayer
@@ -54,5 +62,7 @@ TYPE PARdata
   , InfoFontSize = 12 '*< font size for point info
   AS STRING _
     InfoFontType = "Sans" '*< factor to skip out of a points cloud
+  DECLARE SUB Map_store(BYVAL AS gint)
+  DECLARE SUB Map_restore(BYVAL AS gint)
 END TYPE
 COMMON SHARED AS PARdata PTR PAR

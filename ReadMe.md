@@ -4,16 +4,18 @@ render map tiles from different web sources. As of now coding and
 testing gets done with tracks recorded by MapFactor Navigator software
 in `*.NMEA` and `*.GPX` file format.
 
-The package is [hosted at GitHub](https://github.com/DTJF/pavi).
-Find further information on this project at [the projects introduction
-page](http://www.freebasic.net/forum/???).
-
 Find detailed information on components at
 
-- about [GTK](http://www.gtk.org)
-- about [OsmGpsMap](http://github.com/nzjrs/osm-gps-map)
-- about [FreeBASIC](http://www.freebasic.net), and
-- about [MapFactorNavigator](https://navigatorfree.mapfactor.com/)
+- [GTK](http://www.gtk.org)
+- [OsmGpsMap](http://github.com/nzjrs/osm-gps-map)
+- [FreeBASIC](http://www.freebasic.net), and
+- [MapFactorNavigator](https://navigatorfree.mapfactor.com/)
+
+The package is [hosted at GitHub](https://github.com/DTJF/pavi). Find
+further information on this project at [the projects introduction
+page](https://www.freebasic.net/forum/viewtopic.php?f=8&t=29575&p=285212#p285212)
+and in [the online
+documentation](https://users.freebasic-portal.de/tjf/Projekte/pavi/doc/html/index.html).
 
 It's a GPLv3 licensed GtkApplication with grafical user interface,
 command line control and DBus integration, designed to:

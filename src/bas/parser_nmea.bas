@@ -20,15 +20,18 @@ This constructor gets an input buffer (UBYTE PTR) containing the
 context of an `*.NMEA` file, and parses it, creating an array of #TrP
 points if
 
-* a `$GPGGA` line follows a `$GPRMC` data line
+* a `$GPRMC` line follows a `$GPGGA` data line
 * both lines contain the same timestamp and position
 * both lines have a valid checksum
 
-Invalid or missing numbers get filled by `NaN` entries.
+If a single `$GPGGA` line or a pair of `$GPGGA` and `$GPRMC` lines
+doesn't match this requiaries, they get skipped.
 
-Finaly the resulting #TrP array is located at (and overriding) the
-beginning of the input buffer, and the buffer gets reduced (REALLOCATE)
-in size to the binary data.
+Otherwise a new #TrP gets created for the pair of lines, and that #TrP
+gets stored in the resulting #TrP array, located at (and overriding)
+the beginning of the input buffer.
+
+Invalid or missing numbers get filled by `NaN` entries.
 
 Find the data field description at https://de.wikipedia.org/wiki/NMEA_0183
 
@@ -136,7 +139,7 @@ END FUNCTION
 
 /'* \brief Evaluate the lines data
 \param S start of entry strings (array of ZSTRING PTR)
-\returns location of new result (TrP array) entry
+\returns location of new result (#TrP array) entry
 
 This function checks the location in both lines. In case of a mismatch
 it skips the lines (a point). Otherwise it creates a further entry in
@@ -151,11 +154,11 @@ FUNCTION NMEA.Eval(BYVAL S AS ZSTRING PTR PTR) AS TrP PTR
      *S[5] <> *S[21] THEN Enr += 1 : ?"location mismatch (" & Lin & ")" : RETURN Dat
   VAR r = NEW(Dat) TrP ( _
     DaTi(S) _              '*< Date / Time
-  , LaLo(@S[2]) _          '*< Latitude
-  , LaLo(@S[4]) _          '*< Longitude
+  , LaLo(@S[2]) _          '*< Latitude [radians]
+  , LaLo(@S[4]) _          '*< Longitude [radians]
   , Val_(*S[9]) _          '*< Elevation [m]
   , Val_(*S[22]) * 1.852 _ '*< Speed over ground [km/h]
-  , Val_(*S[23]) _         '*< Direction Angle
+  , Val_(*S[23]) _         '*< Direction Angle [degree]
   , 0 ,0)
   Dat += SIZEOF(TrP)
   RETURN r

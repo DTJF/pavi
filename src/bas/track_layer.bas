@@ -16,10 +16,12 @@ FIXME
 #INCLUDE ONCE "debug.bi"
 #INCLUDE ONCE "string.bi"
 
-TYPE as single float
+TYPE as single float '!! FIXME
 
 
 DECLARE SUB track_layer_interface_init CDECL (BYVAL AS OsmGpsMapLayerIface PTR)
+
+'* \brief Array of default setting for loaded tracks
 STATIC SHARED AS TrackLayerDefault DEFAULT_ENTRIES(...) = { _
   TYPE(@!"\&b00100111" "rgba(0xA4,0x00,0x00,1)", @!"\1" "#EF2929") _
 , TYPE(@!"\&b01000111" "rgba(0xCE,0x5C,0x00,1)", @!"\1" "#FCAF3E") _
@@ -32,6 +34,8 @@ STATIC SHARED AS TrackLayerDefault DEFAULT_ENTRIES(...) = { _
 , TYPE(@!"\&h34" "rgba(0xBA,0xBD,0xB6,1)", @!"\4" "#EEEEEC") _
 , TYPE(NULL, NULL)}
 
+
+'* \brief Enumerators for property IDs
 ENUM
   PROP_0
   PROP_TL_W
@@ -46,7 +50,8 @@ END ENUM
 
 /'* \brief Private data
 
-FIXME
+This structure holds the private (internal) data for the #TrackLayer
+GObject.
 
 \since 0.0
 '/
@@ -80,7 +85,7 @@ TYPE _TrackLayerPrivate
     LayReSurf '*< flag for layer surface redo
 END TYPE
 
-
+' ?? G_ADD_PRIVATE doesn't work (memory conflict) -> classic style
 'G_DEFINE_TYPE_WITH_CODE(TrackLayer, track_layer, G_TYPE_OBJECT _
    ', G_ADD_PRIVATE(TrackLayer) _
    ': G_IMPLEMENT_INTERFACE(OSM_TYPE_GPS_MAP_LAYER, track_layer_interface_init))
@@ -98,7 +103,8 @@ DECLARE FUNCTION track_layer_button_press CDECL(BYVAL AS OsmGpsMapLayer PTR, BYV
 /'* \brief Initialise the interface functions
 \param Iface The interface to modify
 
-FIXME
+This procedure is part of the OsmGpsMapLayer implementation. It
+initialises the interface functions.
 
 \since 0.0
 '/
@@ -109,7 +115,19 @@ SUB track_layer_interface_init CDECL(BYVAL Iface AS OsmGpsMapLayerIface PTR)
   Iface->button_press = @track_layer_button_press()
 END SUB
 
-SUB track_layer_get_property cdecl( _
+
+/'* \brief Handling property fetching
+\param Obj GObject instance
+\param Property_id Registration number
+\param Value The value to fetch
+\param Pspec Specification (for warning message)
+
+This procedure is part of the GObject implementation. It gets a value
+from a certain property.
+
+\since 0.0
+'/
+SUB track_layer_get_property CDECL( _
     BYVAL Obj AS Gobject PTR _
   , BYVAL Property_id AS guint _
   , BYVAL Value AS GValue PTR _
@@ -129,7 +147,19 @@ WITH *TRACK_LAYER(Obj)->Priv
 END WITH
 END SUB
 
-SUB track_layer_set_property cdecl( _
+
+/'* \brief Handling property setting
+\param Obj GObject instance
+\param Property_id Registration number
+\param Value The new value
+\param Pspec Specification (for warning message)
+
+This procedure is part of the GObject implementation. It sets a new
+value for a certain property.
+
+\since 0.0
+'/
+SUB track_layer_set_property CDECL( _
     BYVAL Obj AS Gobject PTR _
   , BYVAL Property_id AS guint _
   , BYVAL Value AS CONST GValue PTR _
@@ -152,7 +182,20 @@ WITH *TRACK_LAYER(Obj)->Priv
 END WITH
 END SUB
 
-FUNCTION track_layer_constructor cdecl( _
+
+/'* \brief GObjectClass CTOR
+\param Typ Objects GType
+\param N_prop Number of properties
+\param Prop Construction parameters
+\returns The constructed GObject
+
+This function is part of the GObject implementation. That constructor
+is setting the start values in the _TrackLayerPrivate structure, after
+chaining up to the parents constructor.
+
+\since 0.0
+'/
+FUNCTION track_layer_constructor CDECL( _
     BYVAL Typ AS GType _
   , BYVAL N_prop AS guint _
   , BYVAL Prop AS GObjectConstructParam PTR) AS Gobject PTR
@@ -175,6 +218,16 @@ FUNCTION track_layer_constructor cdecl( _
   RETURN obj
 END FUNCTION
 
+
+/'* \brief GObjectClass finalisation
+\param Obj The instance to work on
+
+This procedure is part of the GObject implementation. It handles the
+freeing of the used surfaces in this case, chaining up to the parents
+finalisation.
+
+\since 0.0
+'/
 SUB track_layer_finalize CDECL(BYVAL Obj AS Gobject PTR)
 WITH *TRACK_LAYER(Obj)->Priv
   IF .Surface THEN cairo_surface_destroy(.Surface)
@@ -183,6 +236,15 @@ END WITH
   G_OBJECT_CLASS(track_layer_parent_class)->finalize(Obj)
 END SUB
 
+
+/'* \brief GObjectClass initialization
+\param klass Class to initiate
+
+This procedure is part of the GObjectClass implementation. It handles
+the interface setting and the properties in this case.
+
+\since 0.0
+'/
 SUB track_layer_class_init CDECL(BYVAL klass AS TrackLayerClass PTR)
   g_type_class_add_private(klass, SIZEOF(TrackLayerPrivate))
   VAR object_class = G_OBJECT_CLASS(klass)
@@ -266,11 +328,32 @@ SUB track_layer_class_init CDECL(BYVAL klass AS TrackLayerClass PTR)
       , G_PARAM_READWRITE OR G_PARAM_CONSTRUCT))
 END SUB
 
+
+/'* \brief GObject init procedure
+\param Self Object to initiate
+
+This procedure is part of the GObject implementation. It sets the
+pointer to the _TrackLayerPrivate structure in this case.
+
+\since 0.0
+'/
 SUB track_layer_init CDECL(BYVAL Self AS TrackLayer PTR)
   Self->Priv = _
     G_TYPE_INSTANCE_GET_PRIVATE(Self, TRACK_TYPE_LAYER, TrackLayerPrivate)
 END SUB
 
+
+/'* \brief Callback for drawing the layer surfaces
+\param Lay Layer instance
+\param Map Map widget sending the signal
+\param Cr Cairl contents to draw on
+
+This function is part of the OsmGpsMapLayer implementation. It handles
+the (re)drawing of the layer surface, ie when a part of the widget gets
+covered by another widget.
+
+\since 0.0
+'/
 SUB track_layer_draw cdecl( _
     BYVAL Lay AS OsmGpsMapLayer PTR _
   , BYVAL Map AS OsmGpsMap PTR _
@@ -291,10 +374,42 @@ WITH *TRACK_LAYER(Lay)->Priv
 END WITH
 END SUB
 
-FUNCTION track_layer_busy cdecl(BYVAL Lay AS OsmGpsMapLayer PTR) AS gboolean
+
+/'* \brief Callback for busy layer
+\param Lay Layer instance
+\returns FALSE
+
+This function is part of the OsmGpsMapLayer implementation. It returns
+if there're pending operations on the layer, ie like unfinished
+animations. Here it returns always FALSE.
+
+\since 0.0
+'/
+FUNCTION track_layer_busy CDECL(BYVAL Lay AS OsmGpsMapLayer PTR) AS gboolean
   RETURN FALSE
 END FUNCTION
 
+
+/'* \brief Callback for button event
+\param Lay Layer receiving the event
+\param Map Map widget propagating the event
+\param Event Event sended
+\returns FALSE to propagate event further, TRUE when handled
+
+This function is part of the OsmGpsMapLayer implementation. It handles
+button events (mouse clicks) on the map, only clicks with `<shift>` or
+`<control>` keys pressed in this case.
+
+A `<shift>` click searches in the active track for the point nearest to
+the click poisition. If the distance is below a certain value, that
+nearest point gets the current point in the active track.
+
+In case of a `<shift><control>` click not only the active, but all
+tracks are searched for the nearest point. When that nearest point is
+in another track, this track gets the active track.
+
+\since 0.0
+'/
 FUNCTION track_layer_button_press CDECL( _
     BYVAL Lay AS OsmGpsMapLayer PTR _
   , BYVAL Map AS OsmGpsMap PTR _
@@ -302,7 +417,7 @@ FUNCTION track_layer_button_press CDECL( _
   g_return_val_if_fail(TRACK_IS_LAYER(Lay), FALSE)
 
   VAR state = Event->state XOR GDK_MOD2_MASK
-  IF NOT(GDK_CONTROL_MASK + GDK_SHIFT_MASK + GDK_LOCK_MASK) AND state THEN RETURN FALSE
+  IF NOT((GDK_CONTROL_MASK + GDK_SHIFT_MASK + GDK_LOCK_MASK) AND state) THEN RETURN FALSE
 
   DIM AS float lat, lon
   VAR osm = OSM_GPS_MAP(GUI->MAP) _
@@ -312,8 +427,8 @@ FUNCTION track_layer_button_press CDECL( _
   VAR sc = osm_gps_map_get_scale(osm) _
     , d = osm_gps_map_get_scale(osm) * PAR->NearDist / ERA
 
-  IF GDK_CONTROL_MASK AND Event->state THEN '    search all tracks
-    WITH TYPE<TS_nearest>(lon, lat)
+  IF GDK_CONTROL_MASK AND Event->state THEN '          search all tracks
+    WITH TYPE<TS_nearest>(lat, lon)
       VAR ii = -1L, ni = 0L
       FOR i AS LONG = 0 TO UBOUND(.Res)
         IF NULL = .Res(i).Loa THEN EXIT FOR
@@ -330,29 +445,42 @@ FUNCTION track_layer_button_press CDECL( _
     END WITH
   ELSE '                                        search only active track
     WITH *TRACK_LAYER(Lay)->Priv
-      IF 0 = .Loader THEN RETURN false
-      IF d < .Loader->Nearest(lon, lat) THEN RETURN false
+      IF 0 = .Loader THEN RETURN FALSE
+      IF d < .Loader->Nearest(lon, lat) THEN RETURN FALSE
       WITH *.Loader
         lat = .V[.Tmp].Lat
         lon = .V[.Tmp].Lon
         .Cur = .Tmp
       END WITH
     END WITH
+    osm_gps_map_set_center(OSM_GPS_MAP(GUI->MAP), Rad2Deg*lat, Rad2Deg*lon)
   END IF
-  osm_gps_map_set_center(OSM_GPS_MAP(GUI->MAP), Rad2Deg*lat, Rad2Deg*lon)
   RETURN TRUE
 END FUNCTION
 
 
-FUNCTION on_MAP_configure_event CDECL ALIAS "on_MAP_configure_event" ( _
+/'* \brief Callback fetching map size
+\param Wid Widget getting configured (=MAP, unused)
+\param Event The new data
+\param UDat Unused here
+\returns FALSE to propagate the event further
+
+Callback to hook into the configure event for the map widget. When the
+map width or height changes due to a user action (ie. full screen), the
+layer needs an adapted surface.
+
+\since 0.0
+'/
+FUNCTION on_MAP_configure_event CDECL( _
   BYVAL Wid AS GtkWidget PTR _
 , BYVAL Event AS GdkEventConfigure PTR _
-, BYVAL UDat AS GPOINTER) AS gboolean EXPORT
+, BYVAL UDat AS GPOINTER) AS gboolean
 WITH Peek(TrackLayerPrivate, UDat)
   IF .TLw <> Event->width  THEN .TLw = Event->width  : .LayReSurf = TRUE
   IF .TLh <> Event->height THEN .TLh = Event->height : .LayReSurf = TRUE
 END WITH : RETURN FALSE
 END FUNCTION
+
 
 /'* \brief Creates a new instance of TrackLayer.
 \param Map Map object to connect to
@@ -372,16 +500,30 @@ FUNCTION track_layer_new(BYVAL Map AS GObject PTR) AS TrackLayer PTR
       , w = gtk_widget_get_allocated_width(osm) _
       , h = gtk_widget_get_allocated_height(osm)
   VAR r = g_object_new(TRACK_TYPE_LAYER _
-  , "map", Map _
-  , "width", w _
-  , "height", h _
-  , NULL)
+    , "map", Map _
+    , "width", w _
+    , "height", h _
+    , NULL)
   osm_gps_map_layer_add(OSM_GPS_MAP(Map), OSM_GPS_MAP_LAYER(r))
   g_signal_connect(Map, "configure_event" _
-  , G_CALLBACK(@on_MAP_configure_event()), TRACK_LAYER(r)->Priv)
+    , G_CALLBACK(@on_MAP_configure_event()), TRACK_LAYER(r)->Priv)
   RETURN r
 END FUNCTION
 
+
+/'* \brief Render right alligned text, bottom up
+\param Cr Cairo context to work on
+\param Y Vertical position (line)
+\param W Width of the surface
+\param S String to render
+
+Procedure to render a right alligned text in to the
+_TrackLayerPrivate.InfoSurface. The black text gets a white border, in
+order to be readable on dark backgrounds. The next line position gets
+returned in parameter Y.
+
+\since 0.0
+'/
 SUB render_rtext(BYVAL Cr AS cairo_t PTR, BYREF Y AS LONG, BYREF W AS LONG, BYREF S AS STRING)
   IF 0 = LEN(S) THEN EXIT SUB
 
@@ -404,16 +546,56 @@ SUB render_rtext(BYVAL Cr AS cairo_t PTR, BYREF Y AS LONG, BYREF W AS LONG, BYRE
   y -= PAR->InfoFontSize*6\5
 END SUB
 
+
+/'* \brief Format a latitude as string
+\param V Value to format [degree]
+\returns Formated string
+
+Function to format a latitude value in to a human readable string.
+
+\todo Add other string formats.
+
+\since 0.0
+'/
 FUNCTION lat2str(BYVAL V AS float) AS STRING
-  VAR x = ABS(V), g = INT(x), m = FRAC(x) * 60
+  VAR x = ABS(V) _     '*< signless value
+    , g = INT(x) _     '*< degrees
+    , m = FRAC(x) * 60 '*< minutes
   RETURN g & FORMAT(m, "\°00.0000\'") & *IIF(V >= 0, @"N", @"S")
 END FUNCTION
 
+
+/'* \brief Format a longitude as string
+\param V Value to format [degree]
+\returns Formated string
+
+Function to format a longitude value in to a human readable string.
+
+\todo Add other string formats.
+
+\since 0.0
+'/
 FUNCTION lon2str(BYVAL V AS float) AS STRING
-  VAR x = ABS(V), g = INT(x), m = FRAC(x) * 60
+  VAR x = ABS(V) _
+    , g = INT(x) _
+    , m = FRAC(x) * 60
   RETURN g & FORMAT(m, "\°00.0000\'") & *IIF(V >= 0, @"E", @"W")
 END FUNCTION
 
+
+/'* \brief Render the info pad
+\param Lay The layer instance
+\param Map Map instance calling
+
+Procedure renders new values in to the info pad (in the right bottom
+corner when Layer enabled). On a transparent background either only the
+coordinates of the map center, or - when a track is active -
+additionaly the current track point details get rendered to the
+TrackLayerPrivate.InfoSurface, to be shown in the next call to
+track_layer_draw().
+
+\since 0.0
+'/
 SUB render_info( _
     BYVAL Lay AS TrackLayer PTR _
   , BYVAL Map AS OsmGpsMap PTR)
@@ -428,11 +610,6 @@ WITH *Lay->Priv
   cairo_paint(cr)
   cairo_set_operator(cr, CAIRO_OPERATOR_OVER)
 
-  'cairo_select_font_face(cr _
-    ', "Sans" _
-    ', CAIRO_FONT_SLANT_NORMAL _
-    ', CAIRO_FONT_WEIGHT_BOLD)
-  'cairo_set_font_size(cr, PAR->InfoFontSize)
   cairo_select_font_face(cr _
     , .FTyp _
     , CAIRO_FONT_SLANT_NORMAL _
@@ -459,6 +636,22 @@ END WITH
 END SUB
 
 
+
+/'* \brief Render an enabled track
+\param Model GtkTreeModel to work on
+\param Path Line in model (unused here)
+\param Iter Data Position
+\param TLPriv TrackLayerPriv pointer
+\returns FALSE to continue foreach calls
+
+Callback designed as a GtkTreeModelForeachFunc. It greps the track data
+from the model at iter position, doing nothing when that track is
+disabled. Otherwise, when enabled, it renders line and points to the
+TrackLayerPriv.Surface to be shown in the next call to
+track_layer_draw().
+
+\since 0.0
+'/
 FUNCTION render_track CDECL( _
     BYVAL Model AS GtkTreeModel PTR _
   , BYVAL Path AS GtkTreePath PTR _
@@ -468,7 +661,7 @@ FUNCTION render_track CDECL( _
   gtk_tree_model_get(Model, Iter _
     , COL__ENABLE, @en _
     , -1)
-  IF FALSE = en THEN RETURN false
+  IF FALSE = en THEN RETURN FALSE
 
   DIM AS gint lw, pw
   DIM AS gchar PTR lcs, pcs
@@ -558,15 +751,19 @@ WITH PEEK(TrackLayerPrivate, TLPriv)
 END WITH
 END FUNCTION
 
+
 /'* \brief Render all enabled tracks
 \param Lay The layer we're working at
 \param Map The parent map widget
 
-FIXME
+This procedure is part of the OsmGpsMapLayer implementation. It takes
+care that the TrackLayerPriv.Surface matches the map size
+(width/height) and renders all enabled tracks (line/points) to that
+surface. Additionaly it renders the info pad, when enabled.
 
 \since 0.0
 '/
-SUB track_layer_render cdecl( _
+SUB track_layer_render CDECL( _
     BYVAL Lay AS OsmGpsMapLayer PTR _
   , BYVAL Map AS OsmGpsMap PTR)
 
@@ -604,11 +801,14 @@ END WITH
 END SUB
 
 
-/'* \brief FIXME
-\param Lay FIXME
-\returns FIXME
+/'* \brief Provide the next default setting
+\param Lay Layer instance
+\returns Pointer to default setting for the next track
 
-FIXME
+The #TrackLayer instance holds a number of default settings for line
+and point color and width, used as start values when loading a new
+track. This function returns a pointer to the next setting, reseting to
+the first when all defaults were used.
 
 \since 0.0
 '/
@@ -623,6 +823,16 @@ FUNCTION track_layer_get_default CDECL( _
   END WITH
 END FUNCTION
 
+
+/'* \brief Provide pointer to the active track
+\param Lay Layer instance
+\returns Pointer to currently active track
+
+In the #TrackLayer instance one of the loaded tracks is the active
+track. This function returns the pointer to that track.
+
+\since 0.0
+'/
 FUNCTION track_layer_get_loader CDECL( _
   BYVAL Lay AS TrackLayer PTR) AS TrackLoader PTR
 
@@ -631,10 +841,20 @@ FUNCTION track_layer_get_loader CDECL( _
   RETURN Lay->Priv->Loader
 END FUNCTION
 
+
+/'* \brief Show complete track
+\param Lay Layer instance
+
+Procedure setting map position (center) and zoom to show the active
+track completely on the map.
+
+\since 0.0
+'/
 SUB track_layer_center_track CDECL( _
   BYVAL Lay AS TrackLayer PTR)
 
   g_return_if_fail(TRACK_IS_LAYER(Lay))
+
   IF 0 = Lay->Priv->Loader THEN EXIT SUB
 WITH *Lay->Priv->Loader
   .MapCenter(Lay->Priv->TLw, Lay->Priv->TLh)
@@ -642,6 +862,16 @@ WITH *Lay->Priv->Loader
 END WITH
 END SUB
 
+
+/'* \brief Set active track
+\param Lay Layer instance
+\param Loa Track to activate (or NULL)
+
+Procedure receiving a track to make it the active one. When Loa is
+NULL, no track is active.
+
+\since 0.0
+'/
 SUB track_layer_set_loader CDECL( _
   BYVAL Lay AS TrackLayer PTR _
 , BYVAL Loa AS TrackLoader PTR)
@@ -655,6 +885,15 @@ WITH *Loa
 END WITH
 END SUB
 
+
+/'* \brief Redraw surface
+\param Lay Layer instance
+
+Procedure forcing a redraw of the TrackLayerPriv.Surface, ie to show
+adapted track settings.
+
+\since 0.0
+'/
 SUB track_layer_redraw CDECL(BYVAL Lay AS TrackLayer PTR)
 
   g_return_if_fail(TRACK_IS_LAYER(Lay))
@@ -662,6 +901,17 @@ SUB track_layer_redraw CDECL(BYVAL Lay AS TrackLayer PTR)
   track_layer_render(OSM_GPS_MAP_LAYER(Lay), Lay->Priv->Map)
 END SUB
 
+
+/'* \brief Get current point in active track
+\param Lay Layer instance
+\returns The point number (or -1)
+
+When the #TrackLayer holds an active track, a current point in that
+track can get centered on the map. This function provides the point
+index (0 <= p\# <= AZ).
+
+\since 0.0
+'/
 FUNCTION track_layer_get_point CDECL(BYVAL Lay AS TrackLayer PTR) AS gint
 
   g_return_val_if_fail(TRACK_IS_LAYER(Lay), -1)
@@ -670,6 +920,18 @@ FUNCTION track_layer_get_point CDECL(BYVAL Lay AS TrackLayer PTR) AS gint
 
 END FUNCTION
 
+
+/'* \brief Set current point in active track
+\param Lay Layer instance
+\param N New current point index
+
+When the #TrackLayer holds an active track, a current point in that
+track can get centered on the map. This function sets a point index to
+for the next current point. The N parameter gets clamped to the allowed
+range (0 <= N <= AZ).
+
+\since 0.0
+'/
 SUB track_layer_set_point CDECL(BYVAL Lay AS TrackLayer PTR, BYVAL N AS gint)
 
   g_return_if_fail(TRACK_IS_LAYER(Lay))
@@ -685,14 +947,15 @@ END WITH
 END SUB
 
 
-/'* \brief FIXME
-\param Lay FIXME
-\param La0 FIXME
-\param La1 FIXME
-\param Lo0 FIXME
-\param Lo1 FIXME
+/'* \brief Set map segment to the given bounding box
+\param Lay Layer instance
+\param La0 Top latitude [radians]
+\param La1 Bottom latitude [radians]
+\param Lo0 Left longitude [radians]
+\param Lo1 Right longitude [radians]
 
-FIXME
+Procedure setting the map center and zoom in order to show a given
+rectangle.
 
 \note Coordinates in radians here!
 
@@ -706,12 +969,22 @@ SUB track_layer_set_bbox CDECL(BYVAL Lay AS TrackLayer PTR _
 
 WITH *Lay->Priv
   osm_gps_map_set_center_and_zoom(OSM_GPS_MAP(GUI->MAP) _
-  , .5 * (La0 + La1) * Rad2Deg _
-  , .5 * (Lo0 + Lo1) * Rad2Deg _
+  , Rad2Deg * (La0 + La1) * .5 _
+  , Rad2Deg * (Lo0 + Lo1) * .5 _
   , latlon2zoom(.TLw, .TLh, La0, La1, Lo0, Lo1))
 END WITH
 END SUB
 
+
+/'* \brief Move current point
+\param Lay Layer instance
+\param S Movement type
+
+Procedure adapting the index of the current point, showing that new
+current point centered on the map (at current zoom level).
+
+\since 0.0
+'/
 SUB track_layer_point_move CDECL(BYVAL Lay AS TrackLayer PTR, BYVAL S AS gchar PTR)
 
   g_return_if_fail(TRACK_IS_LAYER(Lay))

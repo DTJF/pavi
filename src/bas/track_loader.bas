@@ -122,40 +122,23 @@ FUNCTION latlon2zoom CDECL( _
 , BYVAL Lo0 AS float _
 , BYVAL Lo1 AS float) AS LONG
   DIM AS DOUBLE dlon = Lo1 - Lo0
-  dlon = IIF(dlon, ABS(W * PIx2 / TILESIZE / dlon), 20.)
+  dlon = IIF(dlon, LOG2(ABS(W * PIx2 / TILESIZE / dlon)), 20.)
   DIM AS DOUBLE dlat = atanh(SIN(La1)) - atanh(SIN(La0))
-  dlat = IIF(dlat, ABS(H * PIx2 / TILESIZE / dlat), 20.)
-  RETURN MIN(INT(LOG2(dlon)), INT(LOG2(dlat)))
+  dlat = IIF(dlat, LOG2(ABS(H * PIx2 / TILESIZE / dlat)), 20.)
+  RETURN MIN(INT(dlon), INT(dlat))
 END FUNCTION
 
 
-/'* \brief CTOR preparing data
-\param Fnam The name of the file to operate
+/'* \brief CTOR loading track data
+\param Fnam PathName of the file to operate on
 
-??
-???They contain equal timed data
-lines in `$GPGGA` and `$GPRMV` format, generated once a second. For
-each track point the data in UDT TrP get extracted from both lines and
-get stored in the array TrackLoader.V, extrema (minimum and maximum) stored in
-TrackLoader.Mn and TrackLoader.Mx. Equal track points (no movement) get skipped.
+This constructor opens an input file and greps track data. The file
+contents gets send to a parser, in order to get transformed from ASCII
+to binary data.
 
-
-
-The CTOR opens the data file and greps data if
-
-* a `$GPRMC` line follows a `$GPGGA` line
-* both lines have a checksum and it's valid
-* both lines represent the same timestamp and position
-
-If a single `$GPGGA` line or a pair of `$GPGGA` and `$GPRMC` lines
-doesn't match this requisites, they get skipped.
-
-Otherwise a new entry in the data array TrackLoader.V gets created for each
-pair of lines, and the values get checked against the maximum and
-minimum values in TrackLoader.Mx and TrackLoader.Mn.
-
-Find the data field description at https://de.wikipedia.org/wiki/NMEA_0183
-??
+In case of an error the member variable #TrackLoader.Errr ist set to an
+uman readable error message. The instance does not contain any usful
+data and should get DELETEd in this case.
 
 \since 0.0
 '/
