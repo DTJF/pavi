@@ -208,7 +208,7 @@
     <property name="hexpand">True</property>
     <property name="vexpand">True</property>
     <property name="position">left</property>
-    <signal name="map" handler="on_Poov_limit_size" object="DialogTrackLoad" swapped="no"/>
+    <signal name="map" handler="on_Poov_limit_size" object="ScrollTracks" swapped="no"/>
     <child>
       <object class="GtkScrolledWindow" id="ScrollTracks">
         <property name="visible">True</property>
