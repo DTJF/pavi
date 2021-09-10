@@ -17,6 +17,17 @@ FIXME
 #DEFINE TRACK_IS_CLASS_LAYER(obj) (G_TYPE_CHECK_CLASS_TYPE((obj), TRACK_TYPE_LAYER))
 #DEFINE TRACK_LAYER_GET_CLASS(obj) (G_TYPE_INSTANCE_GET_CLASS((obj), TRACK_TYPE_LAYER, TrackLayerClass))
 
+
+/'* \brief Default setup for loaded tracks
+
+In order to plot a newly loaded track on the map, it needs an initial
+setup (points/lines colors/width). This class holds initial values for
+one track in P (points) and L (lines) member variables. Both are of
+type gchar PTR holding the line width / point radius in the first byte,
+and the color string in the rest of the string.
+
+\since 0.0
+'/
 TYPE TrackLayerDefault
   AS gchar PTR _ ' (first char width + color string)
     P _ '*< point default
@@ -27,11 +38,27 @@ TYPE AS _TrackLayer TrackLayer
 TYPE AS _TrackLayerClass TrackLayerClass
 TYPE AS _TrackLayerPrivate TrackLayerPrivate
 
+
+/'* \brief GObject for ploting tracks
+
+Structure holding the GObject for the new OsmGpsMapLayer that plots
+tracks on the map widget.
+
+\since 0.0
+'/
 TYPE _TrackLayer
   AS GObject Parent
   AS TrackLayerPrivate PTR Priv
 END TYPE
 
+
+/'* \brief GObjectClass for ploting tracks
+
+Structure holding the GObjectClass (interface) for the new
+OsmGpsMapLayer that plots tracks on the map widget.
+
+\since 0.0
+'/
 TYPE _TrackLayerClass
   AS GObjectClass Parent_Class
 END TYPE

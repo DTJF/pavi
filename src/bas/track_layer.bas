@@ -13,13 +13,13 @@ FIXME
 #INCLUDE ONCE "track_layer.bi"
 #INCLUDE ONCE "track_store.bi"
 #INCLUDE ONCE "gui.bi"
-#INCLUDE ONCE "debug.bi"
+'#INCLUDE ONCE "debug.bi"
 #INCLUDE ONCE "string.bi"
 
 TYPE as single float '!! FIXME
 
 
-DECLARE SUB track_layer_interface_init CDECL (BYVAL AS OsmGpsMapLayerIface PTR)
+DECLARE SUB track_layer_interface_init CDECL(BYVAL AS OsmGpsMapLayerIface PTR)
 
 '* \brief Array of default setting for loaded tracks
 STATIC SHARED AS TrackLayerDefault DEFAULT_ENTRIES(...) = { _
@@ -48,7 +48,7 @@ ENUM
 END ENUM
 
 
-/'* \brief Private data
+/'* \brief TrackLayers private data
 
 This structure holds the private (internal) data for the #TrackLayer
 GObject.
@@ -93,7 +93,7 @@ G_DEFINE_TYPE_WITH_CODE(TrackLayer, track_layer, G_TYPE_OBJECT _
    , G_IMPLEMENT_INTERFACE(OSM_TYPE_GPS_MAP_LAYER, track_layer_interface_init))
 
 
-DECLARE SUB render_info CDECL(BYVAL Lay AS TrackLayer PTR, BYVAL Map AS OsmGpsMap PTR)
+DECLARE SUB render_info CDECL(BYVAL AS TrackLayer PTR, BYVAL AS OsmGpsMap PTR)
 DECLARE SUB track_layer_render CDECL(BYVAL AS OsmGpsMapLayer PTR, BYVAL AS OsmGpsMap PTR)
 DECLARE SUB track_layer_draw CDECL(BYVAL AS OsmGpsMapLayer PTR, BYVAL AS OsmGpsMap PTR, BYVAL AS cairo_t PTR)
 DECLARE FUNCTION track_layer_busy CDECL(BYVAL AS OsmGpsMapLayer PTR) AS gboolean
@@ -148,6 +148,29 @@ END WITH
 END SUB
 
 
+/'* \brief Callback fetching map size
+\param Wid Widget getting configured (=MAP, unused)
+\param Event The new data
+\param UDat Unused here
+\returns FALSE to propagate the event further
+
+Callback to hook into the configure event for the map widget. When the
+map width or height changes due to a user action (ie. full screen), the
+layer needs an adapted surface.
+
+\since 0.0
+'/
+FUNCTION on_MAP_configure_event CDECL( _
+  BYVAL Wid AS GtkWidget PTR _
+, BYVAL Event AS GdkEventConfigure PTR _
+, BYVAL UDat AS GPOINTER) AS gboolean
+WITH Peek(TrackLayerPrivate, UDat)
+  IF .TLw <> Event->width  THEN .TLw = Event->width  : .LayReSurf = TRUE
+  IF .TLh <> Event->height THEN .TLh = Event->height : .LayReSurf = TRUE
+END WITH : RETURN FALSE
+END FUNCTION
+
+
 /'* \brief Handling property setting
 \param Obj GObject instance
 \param Property_id Registration number
@@ -168,8 +191,21 @@ WITH *TRACK_LAYER(Obj)->Priv
   SELECT CASE AS CONST Property_id
   CASE PROP_TL_W : .TLw = g_value_get_int(Value)
   CASE PROP_TL_H : .TLh = g_value_get_int(Value)
-  CASE PROP__MAP : .Map = g_value_get_pointer(Value)
-  CASE PROP_PREF : .Default = g_value_get_pointer(Value)
+  CASE PROP__MAP
+    if .Map then
+      osm_gps_map_layer_remove(OSM_GPS_MAP(.Map), OSM_GPS_MAP_LAYER(Obj))
+      g_object_unref(.Map)
+    end if
+    .Map = g_value_get_pointer(Value)
+    g_object_ref(.Map)
+    VAR osm = GTK_WIDGET(.Map)
+    .TLw = gtk_widget_get_allocated_width(osm)
+    .TLh = gtk_widget_get_allocated_height(osm)
+    osm_gps_map_layer_add(OSM_GPS_MAP(.Map), OSM_GPS_MAP_LAYER(Obj))
+    g_signal_connect(.Map, "configure_event" _
+      , G_CALLBACK(@on_MAP_configure_event()), TRACK_LAYER(Obj)->Priv)
+  CASE PROP_PREF
+    .Default = g_value_get_pointer(Value)
     .Nxt = -1
     IF NULL = .Default THEN .Default = @DEFAULT_ENTRIES(0)
   CASE PROP_LOAD : .Default = g_value_get_pointer(Value)
@@ -459,29 +495,6 @@ FUNCTION track_layer_button_press CDECL( _
 END FUNCTION
 
 
-/'* \brief Callback fetching map size
-\param Wid Widget getting configured (=MAP, unused)
-\param Event The new data
-\param UDat Unused here
-\returns FALSE to propagate the event further
-
-Callback to hook into the configure event for the map widget. When the
-map width or height changes due to a user action (ie. full screen), the
-layer needs an adapted surface.
-
-\since 0.0
-'/
-FUNCTION on_MAP_configure_event CDECL( _
-  BYVAL Wid AS GtkWidget PTR _
-, BYVAL Event AS GdkEventConfigure PTR _
-, BYVAL UDat AS GPOINTER) AS gboolean
-WITH Peek(TrackLayerPrivate, UDat)
-  IF .TLw <> Event->width  THEN .TLw = Event->width  : .LayReSurf = TRUE
-  IF .TLh <> Event->height THEN .TLh = Event->height : .LayReSurf = TRUE
-END WITH : RETURN FALSE
-END FUNCTION
-
-
 /'* \brief Creates a new instance of TrackLayer.
 \param Map Map object to connect to
 \returns The newly created TrackLayer instance (transfer full)
@@ -496,18 +509,19 @@ any configure changes of the map window.
 '/
 FUNCTION track_layer_new(BYVAL Map AS GObject PTR) AS TrackLayer PTR
   g_return_val_if_fail(OSM_IS_GPS_MAP(Map), NULL)
-  VAR osm = GTK_WIDGET(Map) _
-      , w = gtk_widget_get_allocated_width(osm) _
-      , h = gtk_widget_get_allocated_height(osm)
-  VAR r = g_object_new(TRACK_TYPE_LAYER _
-    , "map", Map _
-    , "width", w _
-    , "height", h _
-    , NULL)
-  osm_gps_map_layer_add(OSM_GPS_MAP(Map), OSM_GPS_MAP_LAYER(r))
-  g_signal_connect(Map, "configure_event" _
-    , G_CALLBACK(@on_MAP_configure_event()), TRACK_LAYER(r)->Priv)
-  RETURN r
+  'VAR osm = GTK_WIDGET(Map) _
+      ', w = gtk_widget_get_allocated_width(osm) _
+      ', h = gtk_widget_get_allocated_height(osm)
+  'VAR r = g_object_new(TRACK_TYPE_LAYER _
+            ', "map", Map _
+            ', "width", w _
+            ', "height", h _
+            ', NULL)
+  'osm_gps_map_layer_add(OSM_GPS_MAP(Map), OSM_GPS_MAP_LAYER(r))
+  'g_signal_connect(Map, "configure_event" _
+    ', G_CALLBACK(@on_MAP_configure_event()), TRACK_LAYER(r)->Priv)
+  'RETURN r
+  RETURN g_object_new(TRACK_TYPE_LAYER, "map", Map, NULL)
 END FUNCTION
 
 
@@ -547,42 +561,6 @@ SUB render_rtext(BYVAL Cr AS cairo_t PTR, BYREF Y AS LONG, BYREF W AS LONG, BYRE
 END SUB
 
 
-/'* \brief Format a latitude as string
-\param V Value to format [degree]
-\returns Formated string
-
-Function to format a latitude value in to a human readable string.
-
-\todo Add other string formats.
-
-\since 0.0
-'/
-FUNCTION lat2str(BYVAL V AS float) AS STRING
-  VAR x = ABS(V) _     '*< signless value
-    , g = INT(x) _     '*< degrees
-    , m = FRAC(x) * 60 '*< minutes
-  RETURN g & FORMAT(m, "\°00.0000\'") & *IIF(V >= 0, @"N", @"S")
-END FUNCTION
-
-
-/'* \brief Format a longitude as string
-\param V Value to format [degree]
-\returns Formated string
-
-Function to format a longitude value in to a human readable string.
-
-\todo Add other string formats.
-
-\since 0.0
-'/
-FUNCTION lon2str(BYVAL V AS float) AS STRING
-  VAR x = ABS(V) _
-    , g = INT(x) _
-    , m = FRAC(x) * 60
-  RETURN g & FORMAT(m, "\°00.0000\'") & *IIF(V >= 0, @"E", @"W")
-END FUNCTION
-
-
 /'* \brief Render the info pad
 \param Lay The layer instance
 \param Map Map instance calling
@@ -619,9 +597,12 @@ WITH *Lay->Priv
   DIM AS LONG y = .TIh - PAR->InfoFontSize, w = .TIw
   IF .Loader ANDALSO .Loader->Cur >= 0 THEN
 WITH .Loader->V[.Loader->Cur]
-    render_rtext(cr, y, w, FORMAT(.Tim, "yymmdd-hh:mm:ss"))
-    render_rtext(cr, y, w, lon2str(.Lon*Rad2Deg))
-    render_rtext(cr, y, w, lat2str(.Lat*Rad2Deg))
+    'render_rtext(cr, y, w, FORMAT(.Tim, ""yymmdd-hh:mm:ss"))
+    'render_rtext(cr, y, w, PAR->TimStr(@Lay->Priv->Loader->V[Lay->Priv->Loader->Cur]))
+    render_rtext(cr, y, w, PAR->TimStr(.Tim))
+    render_rtext(cr, y, w, PAR->lon2str(.Lon * Rad2Deg))
+    'render_rtext(cr, y, w, PAR->lon2str(@Lay->Priv->Loader->V[.Loader->Cur]))
+    render_rtext(cr, y, w, PAR->lat2str(.Lat * Rad2Deg))
     render_rtext(cr, y, w, FORMAT(.Ele, "##### \m") & FORMAT(.Ang, " ###\°"))
     render_rtext(cr, y, w, FORMAT(.Spd, "##### ""km/h"""))
 END WITH
@@ -629,8 +610,8 @@ END WITH
   ELSE
     DIM AS gfloat lat, lon
     g_object_get(Map, "latitude", @lat, "longitude", @lon, NULL)
-    render_rtext(cr, y, w, lon2str(lon))
-    render_rtext(cr, y, w, lat2str(lat))
+    render_rtext(cr, y, w, PAR->lon2str(lon))
+    render_rtext(cr, y, w, PAR->lat2str(lat))
   END IF
 END WITH
 END SUB
@@ -659,7 +640,7 @@ FUNCTION render_track CDECL( _
   , BYVAL TLPriv AS gpointer) AS gboolean
   DIM AS gboolean en
   gtk_tree_model_get(Model, Iter _
-    , COL__ENABLE, @en _
+    , TST__ENABLE, @en _
     , -1)
   IF FALSE = en THEN RETURN FALSE
 
@@ -667,11 +648,11 @@ FUNCTION render_track CDECL( _
   DIM AS gchar PTR lcs, pcs
   DIM AS TrackLoader PTR loa
   gtk_tree_model_get(Model, Iter _
-    , COL_P_WIDTH, @pw _
-    , COL_L_WIDTH, @lw _
-    , COL_P_COLOR, @pcs _
-    , COL_L_COLOR, @lcs _
-    , COL__LOADER, @loa _
+    , TST_P_WIDTH, @pw _
+    , TST_L_WIDTH, @lw _
+    , TST_P_COLOR, @pcs _
+    , TST_L_COLOR, @lcs _
+    , TST__LOADER, @loa _
     , -1)
   DIM AS GdkRGBA lc, pc
   gdk_rgba_parse(@pc, pcs) : g_free(pcs)
@@ -752,8 +733,8 @@ END WITH
 END FUNCTION
 
 
-/'* \brief Render all enabled tracks
-\param Lay The layer we're working at
+/'* \brief Render enabled tracks and info pad
+\param Lay The layer we're working for
 \param Map The parent map widget
 
 This procedure is part of the OsmGpsMapLayer implementation. It takes
@@ -898,7 +879,10 @@ SUB track_layer_redraw CDECL(BYVAL Lay AS TrackLayer PTR)
 
   g_return_if_fail(TRACK_IS_LAYER(Lay))
 
-  track_layer_render(OSM_GPS_MAP_LAYER(Lay), Lay->Priv->Map)
+WITH *Lay->Priv
+  track_layer_render(OSM_GPS_MAP_LAYER(Lay), .Map)
+  gtk_widget_queue_draw(GTK_WIDGET(.Map))
+END WITH
 END SUB
 
 

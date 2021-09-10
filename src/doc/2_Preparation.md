@@ -4,8 +4,9 @@ Preparation {#PagPreparation}
 
 This package ships the source code of \Proj. In order to use the
 application, it has to get compiled first. Therefor at least the FB
-compiler has to get installed on the users system. Other tools are used
-by the author, here's how to get all components working.
+compiler and the dependency libraries have to get installed on the
+users system. Other tools are used by the author, here's how to get all
+components working.
 
 
 # Tools # {#SecTools}
@@ -21,10 +22,10 @@ management system (D).
 | ------------------------------------------------: | :--: | :------------------------------------------------------------- |
 | [fbc](http://www.freebasic.net)                   | M    | FreeBASIC compiler to compile the source code                  |
 | [Gtk-3](http://www.gtk.org)                       | M  D | GimpToolKit: GUI library                                       |
-| [osm_gps_map](http://github.com/nzjrs/osm-gps-map)| M  D | OpenStreetMap widget for Gtk                                   |
+| [OsmGpsMap](http://github.com/nzjrs/osm-gps-map)  | M  D | OpenStreetMap widget for Gtk                                   |
 | [GIT](http://git-scm.com/)                        | R  D | version control system to organize the files                   |
 | [CMake](http://www.cmake.org)                     | R  D | build management system to build executables and documentation |
-| [cmakefbc](http://github.com/DTJF/cmakefbc)       | R    | FreeBASIC extension for CMake                                  |
+| [CMakeFbc](http://github.com/DTJF/cmakefbc)       | R    | FreeBASIC extension for CMake                                  |
 | [fbdoc](http://github.com/DTJF/fbdoc)             | R    | FreeBASIC documentation tool                                   |
 | [Doxygen](http://www.doxygen.org/)                | R  D | documentation generator (ie. for this text)                    |
 | [Graphviz](http://www.graphviz.org/)              | R  D | Graph Visualization Software (caller/callee graphs)            |
@@ -39,8 +40,8 @@ in the first column.
 
 As an example the preparation of a Debian Linux system is shown here
 
--# In order to install the FreeBASIC compiler, follow (the installation
-   instructions)[https://www.freebasic.net/wiki/CompilerInstalling].
+-# In order to install the FreeBASIC compiler, follow [the installation
+   instructions](https://www.freebasic.net/wiki/CompilerInstalling).
 
 -# Then install the distributed (D) packages of your choise. Ie. on
    Debian LINUX execute:
@@ -51,7 +52,7 @@ As an example the preparation of a Debian Linux system is shown here
    \note The first line is mandatory. In the second line you can omit
    unwanted packages.
 
--# Make cmakefbc working, if wanted. That's easy, when you have GIT and
+-# Make CMakeFbc working, if wanted. That's easy, when you have GIT and
    CMake. Execute (in your projects folder) the commands
    ~~~{.txt}
    git clone https://github.com/DTJF/cmakefbc
@@ -147,7 +148,7 @@ sudo xargs rm < install_manifest.txt
 The package is prepared to build a documentation in form of a HTML tree
 and/or a PDF file. Both get created by the \Doxygen generator, using the
 \FbDoc tool to extract (filter) the documentation context from the \FB
-source code. Generate both (PDF-file and HTML-tree) by executing
+source code. Generate both (PDF file and HTML tree) by executing
 
 ~~~{.txt}
 make doc
@@ -162,7 +163,7 @@ make doc_pdf
 make doc_htm
 ~~~
 
-A further target is implemented to upload the html tree to a web
+A further target is implemented to upload the HTML tree to a web
 server, by executing
 
 ~~~{.txt}
@@ -170,4 +171,5 @@ make doc_www
 ~~~
 
 \note The `doc_www` target needs some configuration first, since the
-      target and its login needs to get specified.
+	  upload tool, its target and its login have to get specified. Find
+	  details in the documentation from cmakefbc and fbdoc.

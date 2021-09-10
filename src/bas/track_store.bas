@@ -1,5 +1,5 @@
 /'* \file track_store.bas
-\brief Source handling the tree store for tracks
+\brief Source handling the tree store of tracks
 
 The track data is stored in a GtkTreeStore. The source in this file
 handles the tree store operations.
@@ -11,6 +11,7 @@ handles the tree store operations.
 #INCLUDE ONCE "track_layer.bi"
 #INCLUDE ONCE "track_store.bi"
 #INCLUDE ONCE "gui.bi"
+#INCLUDE ONCE "string.bi"
 
 
 /'* \brief Callback for finding folders/file entries
@@ -34,9 +35,9 @@ FUNCTION TS_add._find CDECL( _
 WITH *CAST(TS_add PTR, UserData)
   DIM AS gchar PTR n, p
   gtk_tree_model_get(Model, Iter _
-    , COL____NAME, @n _
-    , COL____PATH, @p _
-    , COL__LOADER, @.Loa _
+    , TST____NAME, @n _
+    , TST____PATH, @p _
+    , TST__LOADER, @.Loa _
     , -1)
   IF .Loa THEN
     ' check if file (path+name) is present
@@ -81,28 +82,28 @@ WITH *GUI
   VAR sto = GTK_TREE_STORE(.STO)
   IF NULL = Par THEN
     gtk_tree_store_insert_with_values(sto, @new_par, NULL, -1 _
-      , COL__ENABLE, FALSE _
-      , COL__SELECT, FALSE _
-      , COL_VISIBLE, FALSE _
-      , COL____NAME, Fol _
-      , COL____PATH, NULL _
-      , COL__LOADER, NULL _
+      , TST__ENABLE, FALSE _
+      , TST__SELECT, FALSE _
+      , TST_VISIBLE, FALSE _
+      , TST____NAME, Fol _
+      , TST____PATH, NULL _
+      , TST__LOADER, NULL _
       ,-1)
   END IF
 
   VAR def = track_layer_get_default(TRACK_LAYER(.TRL))
   IF def THEN
     gtk_tree_store_insert_with_values(sto, @iter, IIF(Par, Par, @new_par), -1 _
-      , COL__ENABLE, TRUE _
-      , COL__SELECT, FALSE _
-      , COL_VISIBLE, TRUE _
-      , COL____PATH, Fol _
-      , COL____NAME, Nam _
-      , COL_P_WIDTH, PEEK(UBYTE, def->P) _
-      , COL_L_WIDTH, PEEK(UBYTE, def->L) _
-      , COL_P_COLOR, def->P[1] _
-      , COL_L_COLOR, def->L[1] _
-      , COL__LOADER, Loa _
+      , TST__ENABLE, TRUE _
+      , TST__SELECT, FALSE _
+      , TST_VISIBLE, TRUE _
+      , TST____PATH, Fol _
+      , TST____NAME, Nam _
+      , TST_P_WIDTH, PEEK(UBYTE, def->P) _
+      , TST_L_WIDTH, PEEK(UBYTE, def->L) _
+      , TST_P_COLOR, def->P[1] _
+      , TST_L_COLOR, def->L[1] _
+      , TST__LOADER, Loa _
       ,-1)
     VAR s = gtk_tree_model_get_string_from_iter(model, @iter)
     PEEK(TrackLoader, Loa).Path = *s
@@ -138,11 +139,11 @@ FUNCTION track_store_remove CDECL( _
   DIM AS TrackLoader PTR loa
   DIM AS gchar PTR pcs, lcs, nam, fol
   gtk_tree_model_get(Model, Iter _
-    , COL____PATH, @fol _
-    , COL____NAME, @nam _
-    , COL_P_COLOR, @pcs _
-    , COL_L_COLOR, @lcs _
-    , COL__LOADER, @loa _
+    , TST____PATH, @fol _
+    , TST____NAME, @nam _
+    , TST_P_COLOR, @pcs _
+    , TST_L_COLOR, @lcs _
+    , TST__LOADER, @loa _
     , -1)
   IF pcs THEN g_free(pcs)
   IF lcs THEN g_free(lcs)
@@ -214,8 +215,8 @@ FUNCTION TS_nearest._dist CDECL( _
   DIM AS TrackLoader PTR loa
   DIM AS gboolean en
   gtk_tree_model_get(Model, Iter _
-    , COL__ENABLE, @en _
-    , COL__LOADER, @loa _
+    , TST__ENABLE, @en _
+    , TST__LOADER, @loa _
     , -1)
   IF FALSE = en ORELSE NULL = loa THEN RETURN FALSE
   WITH PEEK(TS_nearest, UserData)
@@ -278,8 +279,8 @@ FUNCTION TS_bbox._bounds CDECL( _
   DIM AS TrackLoader PTR loa
   DIM AS gboolean en
   gtk_tree_model_get(Model, Iter _
-    , COL__ENABLE, @en _
-    , COL__LOADER, @loa _
+    , TST__ENABLE, @en _
+    , TST__LOADER, @loa _
     , -1)
   IF NULL = loa THEN RETURN FALSE ' folder row
 
@@ -337,13 +338,13 @@ WITH *GUI
     , model = GTK_TREE_MODEL(.STO)
   IF LEN(last) THEN
     gtk_tree_model_get_iter_from_string(model, @iter, last)
-    gtk_tree_store_set(store, @iter, COL__SELECT, FALSE, -1)
+    gtk_tree_store_set(store, @iter, TST__SELECT, FALSE, -1)
   END IF
   last = Path
   gtk_tree_model_get_iter_from_string(model, @iter, last)
-  gtk_tree_store_set(store, @iter, COL__SELECT, TRUE, -1)
+  gtk_tree_store_set(store, @iter, TST__SELECT, TRUE, -1)
   DIM AS TrackLoader PTR loa
-  gtk_tree_model_get(model, @iter, COL__LOADER, @loa, -1)
+  gtk_tree_model_get(model, @iter, TST__LOADER, @loa, -1)
 
   VAR p = gtk_tree_path_new_from_string(last)
   gtk_tree_view_expand_to_path(GTK_TREE_VIEW(.TVT), p)
@@ -375,11 +376,11 @@ WITH *GUI
 
   gtk_tree_model_get_iter_from_string(model, @iter, Loa->Path)
   gtk_tree_model_get(model, @iter _
-    , COL____NAME, @nam _
-    , COL_P_WIDTH, @pw _
-    , COL_L_WIDTH, @lw _
-    , COL_P_COLOR, @pc _
-    , COL_L_COLOR, @lc _
+    , TST____NAME, @nam _
+    , TST_P_WIDTH, @pw _
+    , TST_L_WIDTH, @lw _
+    , TST_P_COLOR, @pc _
+    , TST_L_COLOR, @lc _
     , -1)
 
   IF gdk_rgba_parse(@x, pc) THEN _
@@ -396,13 +397,17 @@ WITH *GUI
   g_free(nam)
 WITH *Loa
   gtk_label_set_text(GTK_LABEL(GUI->LTD), .Desc) '?? markup
-  gtk_label_set_text(GTK_LABEL(GUI->LTE), _
-    .Mn.Lon*Rad2Deg & " to " & .Mx.Lon*Rad2Deg & !"\n" _
-  & .Mn.Lat*Rad2Deg & " to " & .Mx.Lat*Rad2Deg & !"\n" _
-  & .Mn.Ele & " to " & .Mx.Ele & !"\n" _
-  & .Mn.Spd & " to " & .Mx.Spd & !"\n" _
-  & .Mn.Ang & " to " & .Mx.Ang _
-  )
+  VAR la0 = .Mn.Lat * Rad2Deg, la1 = .Mx.Lat * Rad2Deg
+  VAR lo0 = .Mn.Lon * Rad2Deg, lo1 = .Mx.Lon * Rad2Deg
+  VAR dti = FORMAT(.Mx.Tim - .Mn.Tim, "ttttt")
+  gtk_label_set_text(GTK_LABEL(GUI->LTE) _
+    , PAR->TimStr(.Mn.Tim) & " (Δ " & dti & ") " & PAR->TimStr(.Mx.Tim) & !"\n" _
+    & PAR->lat2str(la0) & " (Δ " & mid(PAR->lat2str(la1-la0), 3) & ") " & PAR->lat2str(la1) & !"\n" _
+    & PAR->lon2str(lo0) & " (Δ " & mid(PAR->lon2str(lo1-lo0), 3) & ") " & PAR->lon2str(lo1) & !"\n" _
+    & "Ele: " & .Mn.Ele & " (Δ " & (.Mx.Ele-.Mn.Ele) & ") " & .Mx.Ele & !" [m]\n" _
+    & "Spd: " & .Mn.Spd & " (Δ " & (.Mx.Spd-.Mn.Spd) & ") " & .Mx.Spd & !" [km/h]\n" _
+    & "Dir: " & .Mn.Ang & " (Δ " & (.Mx.Ang-.Mn.Ang) & ") " & .Mx.Ang & " [°]"_
+    )
 END WITH
 
   SELECT CASE AS CONST gtk_dialog_run(GTK_DIALOG(.DTP))
@@ -416,10 +421,10 @@ END WITH
     gtk_color_chooser_get_rgba(GTK_COLOR_CHOOSER(.BPC), @x)
     pc = gdk_rgba_to_string(@x)
     gtk_tree_store_set(GTK_TREE_STORE(.STO), @iter _
-      , COL_P_WIDTH, pw _
-      , COL_L_WIDTH, lw _
-      , COL_P_COLOR, pc _
-      , COL_L_COLOR, lc _
+      , TST_P_WIDTH, pw _
+      , TST_L_WIDTH, lw _
+      , TST_P_COLOR, pc _
+      , TST_L_COLOR, lc _
       , -1)
     g_free(pc)
     g_free(lc)

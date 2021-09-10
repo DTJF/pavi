@@ -1,5 +1,5 @@
 /'* \file parser_gpx.bas
-\brief Parser that reads points from `*.GPX` file context
+\brief Source for parser reading `*.GPX` file context
 
 Code for a TYPE (class/UDT) that evaluates the context of a `*.GPX`
 file, creating an array of #TrP entries.

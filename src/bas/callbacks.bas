@@ -32,7 +32,9 @@ SUB on_TrackEnable_toggled CDECL ALIAS "on_TrackEnable_toggled"( _
   gtk_tree_model_get_iter_from_string(GTK_TREE_MODEL(UDat), @iter, Path)
 
   VAR x = IIF(gtk_cell_renderer_toggle_get_active(Cell), FALSE, TRUE)
-  gtk_tree_store_set(GTK_TREE_STORE(UDat), @iter, COL__ENABLE, x, -1)
+  gtk_tree_store_set(GTK_TREE_STORE(UDat), @iter, TST__ENABLE, x, -1)
+
+  track_layer_redraw(TRACK_LAYER(GUI->TRL))
 END SUB
 
 
@@ -51,6 +53,107 @@ SUB on_TrackSel_clicked CDECL ALIAS "on_TrackSel_clicked"( _
 , BYVAL UDat AS gpointer) EXPORT
   GUI->TSnoPref = TRUE
   TS_select(*Path)
+END SUB
+
+
+/'* \brief Callback handling the preference dialog
+\param Cell FIXME
+\param Path FIXME
+\param UDat FIXME
+
+FIXME
+
+\since 0.0
+'/
+SUB on_Pref_clicked CDECL ALIAS "on_Pref_clicked"( _
+  BYVAL Butt AS GtkButton PTR _
+, BYVAL UDat AS gpointer) EXPORT
+?"on_Pref_clicked"
+  DO
+    SELECT CASE AS CONST gtk_dialog_run(GTK_DIALOG(UDat))
+    CASE GTK_RESPONSE_OK : exit do
+    CASE 1 : ?"Save"
+    CASE 2 : ?"Load"
+    CASE 3 : ?"ReDo"
+    CASE ELSE : exit do
+    END SELECT
+  LOOP
+  gtk_widget_hide(GTK_WIDGET(UDat))
+END SUB
+
+SUB on_TSMdelete_clicked CDECL ALIAS "on_TSMdelete_clicked"( _
+  BYVAL Butt AS GtkButton PTR _
+, BYVAL UDat AS gpointer) EXPORT
+?"on_TSMdelete_clicked"
+END SUB
+
+SUB on_TSMnew_clicked CDECL ALIAS "on_TSMnew_clicked"( _
+  BYVAL Butt AS GtkButton PTR _
+, BYVAL UDat AS gpointer) EXPORT
+?"on_TSMnew_clicked ";UDat
+WITH *GUI
+  var adj_min = GTK_ADJUSTMENT(.AMN) _
+    , adj_max = GTK_ADJUSTMENT(.AMX)
+  dim as GtkTreeIter iter
+  dim as GtkTreeModel ptr model
+  IF UDat andalso _
+     gtk_tree_selection_get_selected(GTK_TREE_SELECTION(UDat), @model, @iter) then
+    dim as gchar ptr nam, uri, typ
+    dim as gint nzo, xzo
+    gtk_tree_model_get(model, @iter _
+      , TSM____NAME, @nam _
+      , TSM_____URI, @uri _
+      , TSM_MN_ZOOM, @nzo _
+      , TSM_MX_ZOOM, @xzo _
+      , TSM_IMG_TYP, @typ _
+      , -1)
+
+    gtk_adjustment_set_value(adj_min, nzo)
+    gtk_adjustment_set_value(adj_max, xzo)
+    gtk_entry_set_text(GTK_ENTRY(.EMT), nam)
+    gtk_entry_set_text(GTK_ENTRY(.EMU), uri)
+    gtk_combo_box_set_active(GTK_COMBO_BOX(.CMT), iif(*typ = "png", 0, 1))
+    g_free(typ)
+    g_free(uri)
+    g_free(nam)
+  ELSE
+    gtk_entry_set_text(GTK_ENTRY(.EMT), "")
+    gtk_entry_set_text(GTK_ENTRY(.EMU), "")
+    gtk_combo_box_set_active(GTK_COMBO_BOX(.CMT), 0)
+    gtk_adjustment_set_value(adj_min, 1.)
+    gtk_adjustment_set_value(adj_max, 20.)
+  END IF
+  SELECT CASE AS CONST gtk_dialog_run(GTK_DIALOG(.DMP))
+  CASE GTK_RESPONSE_OK : ?"OK"
+    var typ = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(.CMT))
+    gtk_tree_store_insert_with_values(GTK_TREE_STORE(.TSM), NULL, NULL, -1 _
+      , TSM____NAME, gtk_entry_get_text(GTK_ENTRY(.EMT)) _
+      , TSM______ID, 0 _
+      , TSM_____URI, gtk_entry_get_text(GTK_ENTRY(.EMU)) _
+      , TSM_MN_ZOOM, cast(gint, gtk_adjustment_get_value(adj_min)) _
+      , TSM_MX_ZOOM, cast(gint, gtk_adjustment_get_value(adj_max)) _
+      , TSM_IMG_TYP, typ _
+      , TSM_VISIBLE, TRUE _
+      , -1)
+    g_free(typ)
+  CASE ELSE : ?"Cancel"
+  END SELECT
+  gtk_widget_hide(GTK_WIDGET(.DMP))
+END WITH
+END SUB
+
+SUB on_AdjTileMin_value_changed CDECL ALIAS "on_AdjTileMin_value_changed"( _
+  BYVAL Adj AS GtkAdjustment PTR _
+, BYVAL UDat AS gpointer) EXPORT
+  VAR x = gtk_adjustment_get_value(GTK_ADJUSTMENT(UDat))
+  IF x < gtk_adjustment_get_value(Adj) THEN gtk_adjustment_set_value(Adj, x)
+END SUB
+
+SUB on_AdjTileMax_value_changed CDECL ALIAS "on_AdjTileMax_value_changed"( _
+  BYVAL Adj AS GtkAdjustment PTR _
+, BYVAL UDat AS gpointer) EXPORT
+  VAR x = gtk_adjustment_get_value(GTK_ADJUSTMENT(UDat))
+  IF x > gtk_adjustment_get_value(Adj) THEN gtk_adjustment_set_value(Adj, x)
 END SUB
 
 
@@ -78,8 +181,9 @@ WITH *GUI
 
       g_free(list->data)
       list = list->next
-    WEND : TS_select(last->Path)
-    g_slist_free(list)
+    WEND : g_slist_free(list)
+    gtk_tree_view_column_queue_resize(GTK_TREE_VIEW_COLUMN(.TVC))
+    TS_select(last->Path)
   END IF
   gtk_widget_hide(GTK_WIDGET(.DTL))
 END WITH
@@ -106,13 +210,36 @@ WITH *GUI
 
   VAR model = gtk_tree_view_get_model(Tree)
   DIM AS GtkTreeIter iter
-  DIM AS gchar PTR nam, id
+  DIM AS gchar PTR nam
+  DIM AS gint PTR id
   gtk_tree_model_get_iter(model, @iter, Path)
-  gtk_tree_model_get(model, @iter, 0, @nam, 1, @id, -1)
-
-  g_object_set(.MAP, "map-source", VALINT(*id), NULL)
+  gtk_tree_model_get(model, @iter _
+    , TSM____NAME, @nam _
+    , TSM______ID, @id _
+    , -1)
+  IF id >= 0 THEN
+    g_object_set(.MAP, "map-source", id, NULL)
+  ELSE
+    DIM AS gchar PTR uri, typ
+    dim as gint nzo, xzo
+    gtk_tree_model_get(model, @iter _
+      , TSM_____URI, @uri _
+      , TSM_MN_ZOOM, @nzo _
+      , TSM_MX_ZOOM, @xzo _
+      , TSM_IMG_TYP, @typ _
+      , -1)
+    g_object_set(.MAP _
+      , "map-source", id _
+      , "repo-uri", uri _
+      , "min-zoom", nzo _
+      , "max-zoom", xzo _
+      , "image-format", typ _
+      , NULL)
+    g_free(uri)
+    g_free(typ)
+  END IF
   gtk_window_set_title(GTK_WINDOW(.WIN), nam)
-  g_free(nam) : g_free(id)
+  g_free(nam)
   gtk_popover_popdown(GTK_POPOVER(UDat))
 END WITH
 END SUB
@@ -151,7 +278,7 @@ END SUB
 
 SUB handling the map layer. The original OsmGpsMapLayer gets added or
 removed from the map widget. And the internal coordinates display get a
-note by setting the #PARdata.LayOn flag.
+note by setting the #PARclass.LayOn flag.
 
 \since 0.0
 '/
@@ -162,6 +289,7 @@ WITH *GUI
   IF gtk_toggle_button_get_active(Butt) THEN
     PAR->LayOn = TRUE
     osm_gps_map_layer_add(OSM_GPS_MAP(.MAP), OSM_GPS_MAP_LAYER(.OSD))
+    track_layer_redraw(TRACK_LAYER(.TRL))
   ELSE
     PAR->LayOn = FALSE
     osm_gps_map_layer_remove(OSM_GPS_MAP(.MAP), OSM_GPS_MAP_LAYER(.OSD))

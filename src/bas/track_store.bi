@@ -12,17 +12,31 @@ TYPE AS SINGLE float ' !!
 #INCLUDE ONCE "Gir/Gtk-3.0.bi"
 #INCLUDE ONCE "track_loader.bi"
 
-ENUM TSTracksColumns
-  COL__SELECT = 0
-  COL__ENABLE
-  COL_VISIBLE
-  COL____PATH
-  COL____NAME
-  COL_P_WIDTH
-  COL_L_WIDTH
-  COL_P_COLOR
-  COL_L_COLOR
-  COL__LOADER
+
+'* \brief Enumerators for maps tree model columns
+ENUM TSMcolumns
+  TSM____NAME = 0
+  TSM______ID
+  TSM_____URI
+  TSM_MN_ZOOM
+  TSM_MX_ZOOM
+  TSM_VISIBLE
+  TSM_IMG_TYP
+END ENUM
+
+
+'* \brief Enumerators for tracks tree model columns
+ENUM TSTcolumns
+  TST__SELECT = 0
+  TST__ENABLE
+  TST_VISIBLE
+  TST____PATH
+  TST____NAME
+  TST_P_WIDTH
+  TST_L_WIDTH
+  TST_P_COLOR
+  TST_L_COLOR
+  TST__LOADER
 END ENUM
 
 
@@ -71,8 +85,10 @@ END TYPE
 /'* \brief Class finding the nearest track point
 
 The constructor searches all active tracks for the point nearest to the
-given location. In case of more than four active tracks, the most
-nearest for loaders remain in the #TS_nearest.Res array.
+given location, storing track and distance in the #TS_nearest.Res array
+slots. In case of more than four active tracks, a smaller distance
+overrides an existing entry, so that the most nearest four tracks
+remain in the slots.
 
 \since 0.0
 '/

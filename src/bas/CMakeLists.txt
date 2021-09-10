@@ -40,45 +40,65 @@ SET(SRC_BI
   "parser_nmea.bi"
   )
 
-IF(NOT(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)) # out-of-source build
-  SET(ui "pavi.ui")
-  SET(png "pavi.png")
-# for cmake >= 3.14
+SET(ui_src "${CMAKE_CURRENT_SOURCE_DIR}/pavi.ui")
+SET(gui_tar "${CMAKE_CURRENT_BINARY_DIR}/pavi.gui")
+EXECUTE_PROCESS(
+  COMMAND sed --version
+  OUTPUT_VARIABLE sedout
+  )
+
+IF(sedout)
+  ADD_CUSTOM_COMMAND(OUTPUT ${gui_tar}
+    COMMAND sed 's/^\\s\\+<*/</' ${ui_src} > ${gui_tar}
+    DEPENDS ${ui_src}
+    ) # compress UI (remove trailing white spaces)
+ELSE()
   FILE(CREATE_LINK
-    ${CMAKE_CURRENT_SOURCE_DIR}/${ui}
-    ${CMAKE_CURRENT_BINARY_DIR}/${ui}
-    SYMBOLIC
-    )
-  FILE(CREATE_LINK
-    ${CMAKE_CURRENT_SOURCE_DIR}/${png}
-    ${CMAKE_CURRENT_BINARY_DIR}/${png}
+    ${ui_src}
+    ${gui_tar}
     SYMBOLIC
     )
 # for cmake < 3.14
   #EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND}
     #-E create_symlink
-    #${CMAKE_CURRENT_SOURCE_DIR}/${ui}
-    #${CMAKE_CURRENT_BINARY_DIR}/${ui}
+    #${ui_src}
+    #${gui_tar}
     #)
+ENDIF()
+
+IF(NOT(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)) # out-of-source build
+  SET(png_src "${CMAKE_SOURCE_DIR}/img/pavi.png")
+  SET(png_tar "${CMAKE_CURRENT_BINARY_DIR}/pavi.png")
+# for cmake >= 3.14
+  FILE(CREATE_LINK
+    ${png_src}
+    ${png_tar}
+    SYMBOLIC
+    )
+# for cmake < 3.14
   #EXECUTE_PROCESS(COMMAND ${CMAKE_COMMAND} # for cmake < 3.14
     #-E create_symlink
-    #${CMAKE_CURRENT_SOURCE_DIR}/${png}
-    #${CMAKE_CURRENT_BINARY_DIR}/${png}
+    #${png_src}
+    #${png_tar}
     #)
 ENDIF()
 
 # pavi[.exe]: compile and link the final executable
 ADD_EXECUTABLE(${PROJ_NAME} ${SRC_BAS})
+
 #SET(CMAKE_EXE_LINKER_FLAGS "-Wl -z,relro") # must override global flags
 SET_TARGET_PROPERTIES(${PROJ_NAME} PROPERTIES
-  #COMPILE_FLAGS "-m pavi -exx -w all"
-  COMPILE_FLAGS "-m pavi -d G_DISABLE_CAST_CHECKS"
+  COMPILE_FLAGS "-m pavi -exx -w all"
+  #COMPILE_FLAGS "-m pavi -O 3 -d G_DISABLE_CAST_CHECKS"
   LINK_FLAGS "-export"
   )
 
 ADD_Fbc_SRC_DEPS(${PROJ_NAME})
 
-INSTALL(TARGETS ${PROJ_NAME} #!!"pavi.ui" "logo.png"
+INSTALL(TARGETS ${PROJ_NAME}
+  DESTINATION bin
+  )
+INSTALL(FILES ${gui_tar} ${png_src}
   DESTINATION bin
   )
 

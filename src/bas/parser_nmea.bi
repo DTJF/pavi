@@ -6,8 +6,7 @@
 
 #INCLUDE ONCE "track_loader.bi"
 
-
-/'* \brief NMEA parser UDT (class with working code in CTOR)
+/'* \brief Class parsing NMEA file content
 
 This UDTs constructor gets the context of a `*.NMEA` file and evaluates
 it, reading the date, time, longitude, latitude, elevation, ground

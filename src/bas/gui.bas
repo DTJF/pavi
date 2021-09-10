@@ -12,7 +12,8 @@ creating the user interface, and handle the parameters.
 #INCLUDE ONCE "track_layer.bi"
 #INCLUDE ONCE "track_store.bi"
 #INCLUDE ONCE "gui.bi"
-#INCLUDE ONCE "debug.bi"
+#INCLUDE ONCE "string.bi"
+'#INCLUDE ONCE "debug.bi"
 
 
 FUNCTION TVT_select( _
@@ -29,7 +30,7 @@ WITH *GUI
   DIM AS TrackLoader PTR loa
   gtk_tree_model_get_iter(Model, @iter, Path)
   gtk_tree_model_get(Model, @iter _
-    , COL__LOADER, @loa _
+    , TST__LOADER, @loa _
     , -1)
   IF loa THEN TS_preference(loa)
   RETURN FALSE
@@ -37,7 +38,7 @@ END WITH
 END FUNCTION
 
 
-CONSTRUCTOR GUIdata(BYREF Fnam AS STRING, BYVAL Appli AS GApplication PTR)
+CONSTRUCTOR GUIclass(BYREF Fnam AS STRING, BYVAL Appli AS GApplication PTR)
   VAR er = gtk_check_version(3, 22, 0)
   IF er THEN g_error("failed: " & *er) : g_application_quit(Appli)
 
@@ -56,8 +57,13 @@ CONSTRUCTOR GUIdata(BYREF Fnam AS STRING, BYVAL Appli AS GApplication PTR)
   ScrollTracks = gtk_builder_get_object(xml, "ScrollTracks")
   STO = gtk_builder_get_object(xml, "TSTracks")
   TVT = gtk_builder_get_object(xml, "TVTracks")
+  TVC = gtk_builder_get_object(xml, "ClmnTrackName")
   DTL = gtk_builder_get_object(xml, "DialogTrackLoad")
   DTP = gtk_builder_get_object(xml, "DialogTrackPref")
+  TSM = gtk_builder_get_object(xml, "TSMaps")
+  DMP = gtk_builder_get_object(xml, "DialogMapPref")
+  AMN = gtk_builder_get_object(xml, "AdjTileMin")
+  AMX = gtk_builder_get_object(xml, "AdjTileMax")
   LTD = gtk_builder_get_object(xml, "LabelDesc")
   LTE = gtk_builder_get_object(xml, "LabelExtrema")
   APW = gtk_builder_get_object(xml, "AdjTrackPoint")
@@ -66,6 +72,9 @@ CONSTRUCTOR GUIdata(BYREF Fnam AS STRING, BYVAL Appli AS GApplication PTR)
   CPC = gtk_builder_get_object(xml, "ComboColor")
   ALW = gtk_builder_get_object(xml, "AdjTrackLine")
   BLC = gtk_builder_get_object(xml, "ColorTrackLine")
+  EMT = gtk_builder_get_object(xml, "EntryMapTitle")
+  EMU = gtk_builder_get_object(xml, "EntryMapUri")
+  CMT = gtk_builder_get_object(xml, "ComboTileTyp")
   TBL = gtk_builder_get_object(xml, "TBLayer")
   MAP = g_object_new(OSM_TYPE_GPS_MAP _
   , "tile-cache", OSM_GPS_MAP_CACHE_AUTO _
@@ -102,13 +111,17 @@ CONSTRUCTOR GUIdata(BYREF Fnam AS STRING, BYVAL Appli AS GApplication PTR)
   osm_gps_map_layer_render(OSM_GPS_MAP_LAYER(OSD), OSM_GPS_MAP(MAP))
 
   VAR src1 = OSM_GPS_MAP_SOURCE_NULL
-  VAR listo = GTK_LIST_STORE(gtk_builder_get_object(xml, "LSMaps"))
   FOR i AS INTEGER = 1 TO OSM_GPS_MAP_SOURCE_LAST - 1
     IF 0 = osm_gps_map_source_is_valid(i) THEN CONTINUE FOR
-    gtk_list_store_insert_with_values(listo, NULL, -1 _
-    , 0, osm_gps_map_source_get_friendly_name(i) _
-    , 1, STR(i) _
-    ,-1)
+    gtk_tree_store_insert_with_values(GTK_TREE_STORE(TSM), NULL, NULL, -1 _
+      , TSM____NAME, osm_gps_map_source_get_friendly_name(i) _
+      , TSM______ID, i _
+      , TSM_____URI, osm_gps_map_source_get_repo_uri(i) _
+      , TSM_MN_ZOOM, osm_gps_map_source_get_min_zoom(i) _
+      , TSM_MX_ZOOM, osm_gps_map_source_get_max_zoom(i) _
+      , TSM_VISIBLE, FALSE _
+      , TSM_IMG_TYP, osm_gps_map_source_get_image_format(i) _
+      , -1)
     IF 0 = src1 THEN src1 = i
   NEXT
   g_object_set(MAP _
@@ -129,11 +142,11 @@ END CONSTRUCTOR
 /'* \brief DTOR to free memory
 
 Destructor freeing the allocated memory for the UDTs created in the
-constructor #GUIdata::GUIdata.
+constructor #GUIclass::GUIclass.
 
 \since 0.0
 '/
-DESTRUCTOR GUIdata()
+DESTRUCTOR GUIclass()
   TS_finalize()
   g_object_unref(TRL)
   g_object_unref(STO)
@@ -148,7 +161,7 @@ Procedure storing the current map segment in the Ind memory slot.
 
 \since 0.0
 '/
-SUB PARdata.Map_store(BYVAL Ind AS gint)
+SUB PARclass.Map_store(BYVAL Ind AS gint)
   IF Ind > UBOUND(MapSlots) THEN EXIT SUB
 WITH MapSlots(Ind)
   DIM AS OsmGpsMapPoint p0, p1
@@ -170,10 +183,59 @@ so that the zoom level may change when the map size changed.
 
 \since 0.0
 '/
-SUB PARdata.Map_restore(BYVAL Ind AS gint)
+SUB PARclass.Map_restore(BYVAL Ind AS gint)
   IF Ind > UBOUND(MapSlots) THEN EXIT SUB
 WITH MapSlots(Ind)
   IF .La0 > PId2 THEN EXIT SUB ' invalid slot
   track_layer_set_bbox(TRACK_LAYER(GUI->TRL), .La0, .La1, .Lo0, .Lo1)
 END WITH
 END SUB
+
+
+/'* \brief Format a latitude as string
+\param V Value to format [degree]
+\returns Formated string
+
+Function to format a latitude value in to a human readable string.
+
+\todo Add other string formats.
+
+\since 0.0
+'/
+FUNCTION PARclass.lat2str(BYVAL V AS float) AS STRING
+  SELECT CASE AS CONST LatLonTyp
+  CASE 1
+    VAR x = ABS(V) _
+      , g = INT(x) _
+      , m = FRAC(x) * 60
+    RETURN *IIF(V >= 0, @"N ", @"S ") & g & FORMAT(m, "\°00.0000")
+  CASE ELSE : return ""
+  END SELECT
+END FUNCTION
+
+
+/'* \brief Format a longitude as string
+\param V Value to format [degree]
+\returns Formated string
+
+Function to format a longitude value in to a human readable string.
+
+\todo Add other string formats.
+
+\since 0.0
+'/
+FUNCTION PARclass.lon2str(BYVAL V AS float) AS STRING
+  SELECT CASE AS CONST LatLonTyp
+  CASE 1
+    VAR x = ABS(V) _
+      , g = INT(x) _
+      , m = FRAC(x) * 60
+    RETURN *IIF(V >= 0, @"E ", @"W ") & g & FORMAT(m, "\°00.0000")
+  CASE ELSE : return ""
+  END SELECT
+END FUNCTION
+
+FUNCTION PARclass.TimStr(BYVAL T AS double) AS STRING
+  RETURN FORMAT(T, DaTiFormat)
+END FUNCTION
+

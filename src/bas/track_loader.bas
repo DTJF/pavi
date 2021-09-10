@@ -1,5 +1,5 @@
 /'* \file track_loader.bas
-\brief Source for loading MapFactor Navigator track files
+\brief Source for loading track files
 
 A UDT to load and analyse track files (`*.NMEA` and `*.GPX`) generated
 by the MapFactor Navigator software.
@@ -158,9 +158,9 @@ CONSTRUCTOR TrackLoader(BYVAL Fnam AS CONST ZSTRING PTR)
   IF UCASE(RIGHT(*Fnam, 4)) = ".GPX" THEN
     WITH TYPE<GPX>(@THIS)
       Desc = _
-         Byt & " bytes: " _
+        "(file/mem) bytes " & Byt & "/" & Siz & !": \n" _
       & .Trk & " track[s] (" & .Seg &  " segments[s]), " _
-      & .Pnt & " point[s] (" & .Ext & !" extension[s])\n\n" _
+      & .Pnt & " point[s] (" & .Ext & !" extension[s])\n" _
       & .TiX + .LoX + .LaX + .ElX + .SpX + .AnX & " err/miss: " _
       & .TiX & " <time>, " _
       & .LoX & " <lon>, " _
@@ -172,7 +172,7 @@ CONSTRUCTOR TrackLoader(BYVAL Fnam AS CONST ZSTRING PTR)
   ELSE
     WITH TYPE<NMEA>(@THIS)
       Desc = _
-         " bytes (file/mem): " & Byt & "/" & Siz & ": " _
+        "(file/mem) bytes " & Byt & "/" & Siz & ": " _
       & .Lin & " lines, " & (Siz \ SIZEOF(TrP)) & " points (" _
       & .Enr & " error[s])"
     END WITH

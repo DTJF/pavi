@@ -6,7 +6,7 @@
 
 #INCLUDE ONCE "track_loader.bi"
 
-/'* \brief GPX parser UDT (class with working code in CTOR)
+/'* \brief Class parsing GPX file content
 
 This UDTs constructor gets the context of a `*.GPX` file and evaluates
 it, reading the date, time, longitude, latitude, elevation, ground

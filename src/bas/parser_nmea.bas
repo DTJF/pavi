@@ -1,5 +1,5 @@
 /'* \file parser_nmea.bas
-\brief Parser that reads points from `*.NMEA` file context
+\brief Source for parser reading `*.NMEA` file context
 
 Code for a TYPE (class/UDT) that evaluates the context of a `*.NMEA`
 file, creating an array of #TrP entries.

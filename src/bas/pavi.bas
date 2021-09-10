@@ -24,8 +24,8 @@ END SUB
 
 SUB pavi_startup CDECL(BYVAL App AS GApplication PTR)
   G_APPLICATION_CLASS(pavi_parent_class)->startup(App)
-  PAR = NEW PARdata
-  GUI = NEW GUIdata("pavi.ui", App)
+  PAR = NEW PARclass
+  GUI = NEW GUIclass("pavi.gui", App)
 END SUB
 
 SUB pavi_activate CDECL(BYVAL App AS GApplication PTR)
